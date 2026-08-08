@@ -1,0 +1,2020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deadline Day — 5-a-Side Auction Draft (by Noufal)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@500;700&family=Karla:wght@400;500;700;800&display=swap');
+
+:root{
+  --pitch-dark:#0d2818;
+  --pitch:#123a22;
+  --pitch-line: rgba(255,255,255,0.055);
+  --parchment:#f2e8cf;
+  --parchment-2:#e9dcb8;
+  --ink:#1b2a20;
+  --ink-soft:#4a5a4c;
+  --gold:#c9a227;
+  --gold-bright:#e9c34a;
+  --claret:#8c2f39;
+  --claret-bright:#b23a46;
+  --silver:#aeb7bd;
+  --panel:#163d26;
+  --panel-line: rgba(242,232,207,0.12);
+  --white: #f7f4ec;
+  --radius: 10px;
+  --font-display: 'Anton', sans-serif;
+  --font-body: 'Karla', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family: var(--font-body);
+  color: var(--white);
+  background:
+    repeating-linear-gradient(90deg, var(--pitch-line) 0px, var(--pitch-line) 1px, transparent 1px, transparent 64px),
+    radial-gradient(ellipse 140% 90% at 50% -10%, var(--pitch) 0%, var(--pitch-dark) 70%);
+  min-height:100vh;
+  background-color: var(--pitch-dark);
+}
+#app{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding: 28px 16px 60px;
+}
+
+.eyebrow{
+  font-family: var(--font-mono);
+  letter-spacing: 3px;
+  font-size: 11px;
+  color: var(--gold-bright);
+  text-transform:uppercase;
+  opacity:0.9;
+}
+.h1{
+  font-family: var(--font-display);
+  font-size: clamp(34px, 6vw, 56px);
+  letter-spacing: 1px;
+  margin: 4px 0 0;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--white);
+}
+.h1 .accent{ color: var(--gold-bright); }
+.sub{ color: var(--silver); font-size: 14px; margin-top: 8px; max-width: 480px; text-align:center; line-height:1.5;}
+
+/* ---------- shared card/panel ---------- */
+.panel{
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+}
+.stack{ display:flex; flex-direction:column; gap:14px; width:100%; }
+
+input[type=text], input[type=number]{
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--panel-line);
+  color: var(--white);
+  font-family: var(--font-body);
+  font-weight:700;
+  font-size: 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  outline:none;
+  width:100%;
+  letter-spacing: 0.5px;
+}
+input::placeholder{ color: rgba(247,244,236,0.4); font-weight:500;}
+input:focus{ border-color: var(--gold); }
+
+button{
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.3px;
+  border: none;
+  border-radius: 8px;
+  padding: 13px 18px;
+  cursor:pointer;
+  transition: transform .12s ease, filter .12s ease;
+}
+button:active{ transform: translateY(1px) scale(0.99); }
+button:disabled{ opacity:0.35; cursor:not-allowed; filter:none !important; }
+
+.btn-primary{ background: var(--gold); color: #201703; }
+.btn-primary:hover:not(:disabled){ filter: brightness(1.08); }
+.btn-claret{ background: var(--claret); color: var(--white); }
+.btn-claret:hover:not(:disabled){ filter: brightness(1.12); }
+.btn-ghost{ background: transparent; color: var(--white); border: 1px solid var(--panel-line); }
+.btn-ghost:hover:not(:disabled){ border-color: var(--gold); color: var(--gold-bright); }
+.btn-full{ width:100%; }
+
+.card-shell{ width:100%; max-width: 480px; }
+
+/* ---------- landing ---------- */
+.landing-wrap{ display:flex; flex-direction:column; align-items:center; gap:26px; width:100%; max-width: 420px; margin-top: 18px;}
+.mode-toggle{ display:flex; width:100%; background: rgba(0,0,0,0.25); border-radius: 8px; padding:4px; gap:4px; }
+.mode-toggle button{ flex:1; background:transparent; color: var(--silver); padding: 10px; }
+.mode-toggle button.active{ background: var(--gold); color:#201703; }
+
+/* ---------- lobby ---------- */
+.room-code-display{
+  font-family: var(--font-mono);
+  font-size: 34px;
+  font-weight:700;
+  letter-spacing: 6px;
+  color: var(--gold-bright);
+  text-align:center;
+  padding: 14px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 8px;
+  border: 1px dashed var(--gold);
+}
+.roster{ display:flex; flex-direction:column; gap:8px; width:100%; }
+.roster-row{
+  display:flex; align-items:center; justify-content:space-between;
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-weight:700;
+}
+.roster-row .tag{ font-family: var(--font-mono); font-size:11px; color: var(--gold-bright); letter-spacing:1px; }
+
+/* ---------- auction screen ---------- */
+.auction-layout{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 22px;
+  width:100%;
+  max-width: 1080px;
+}
+@media (min-width: 900px){
+  .auction-layout{ grid-template-columns: 300px 1fr 300px; align-items:start; }
+}
+.topbar{
+  display:flex; justify-content:space-between; align-items:center;
+  width:100%; max-width:1080px; margin-bottom: 18px; flex-wrap:wrap; gap:10px;
+}
+.pill{
+  font-family: var(--font-mono); font-size:12px; letter-spacing:1px;
+  background: rgba(0,0,0,0.25); padding: 8px 14px; border-radius:20px;
+  border: 1px solid var(--panel-line); color: var(--silver);
+}
+.pill b{ color: var(--gold-bright); }
+
+.sticker-stage{
+  perspective: 1200px;
+  display:flex; flex-direction:column; align-items:center; gap:18px;
+}
+.sticker{
+  width: 280px; height: 400px;
+  border-radius: 16px;
+  position:relative;
+  background: linear-gradient(160deg, var(--parchment) 0%, var(--parchment-2) 100%);
+  color: var(--ink);
+  display:flex; flex-direction:column;
+  padding: 16px;
+  border: 4px solid var(--silver);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.4);
+  transform-style: preserve-3d;
+}
+.sticker.legend{ background: linear-gradient(160deg, #f5e6b8 0%, #e8cf8a 100%); border-color: var(--gold); box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px var(--gold), 0 0 24px rgba(201,162,39,0.35); }
+.sticker.sticker-flip{ animation: flipIn .5s cubic-bezier(.2,.9,.3,1.2); }
+@keyframes flipIn{
+  from{ transform: rotateY(90deg) scale(0.9); opacity:0; }
+  to{ transform: rotateY(0deg) scale(1); opacity:1; }
+}
+.sticker-top{ display:flex; justify-content:space-between; align-items:flex-start; }
+.sticker-ovr{ display:flex; flex-direction:column; align-items:center; line-height:1; }
+.sticker-ovr .num{ font-family: var(--font-display); font-size: 34px; }
+.sticker-ovr .pos{ font-family: var(--font-display); font-size: 14px; color: var(--claret); }
+.sticker.legend .sticker-ovr .pos{ color: var(--gold); }
+.sticker-tier{
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 2px; text-transform:uppercase;
+  color: var(--claret); font-weight:700; background: rgba(140,47,57,0.12); padding:3px 7px; border-radius:6px;
+}
+.sticker.legend .sticker-tier{ color: var(--gold); background: rgba(201,162,39,0.18); }
+.sticker-league{ font-family: var(--font-mono); font-size:9px; letter-spacing:1px; color: var(--ink-soft); }
+.sticker-initials{
+  flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-family: var(--font-display);
+  font-size: 46px;
+  color: rgba(27,42,32,0.16);
+  letter-spacing: 1px;
+  height: 78px;
+}
+.sticker-name{
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height:1.05;
+  text-transform:uppercase;
+  margin-top: 2px;
+}
+.sticker-club{ font-size:11px; font-weight:700; color: var(--ink-soft); margin-top:1px; margin-bottom:8px; }
+.sticker-stats{ display:grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; margin-top:auto; }
+.sticker-stat-row{ display:flex; justify-content:space-between; font-family: var(--font-mono); font-size:12px; font-weight:700; border-bottom: 1px dashed rgba(27,42,32,0.15); padding-bottom:2px; }
+.sticker-stat-row .val{ color: var(--claret); }
+.sticker.legend .sticker-stat-row .val{ color: #8a6a10; }
+
+.timer{
+  font-family: var(--font-mono);
+  font-size: 44px; font-weight:700;
+  color: var(--white);
+  letter-spacing: 2px;
+}
+.timer.urgent{ color: var(--claret-bright); animation: pulse .5s infinite alternate; }
+@keyframes pulse{ from{ opacity:1; } to{ opacity:0.55; } }
+
+.current-bid-box{
+  text-align:center;
+  background: rgba(0,0,0,0.25);
+  border-radius: 10px;
+  padding: 14px 22px;
+  min-width: 220px;
+  border: 1px solid var(--panel-line);
+}
+.current-bid-amount{
+  font-family: var(--font-display); font-size: 40px; color: var(--gold-bright); letter-spacing:1px;
+}
+.current-bid-by{ font-size:13px; color: var(--silver); margin-top:2px; }
+
+.bid-controls{ display:flex; flex-direction:column; gap:10px; width:100%; max-width:340px; }
+.bid-row{ display:flex; gap:8px; }
+.bid-row button{ flex:1; }
+.bid-custom{ display:flex; gap:8px; }
+.bid-custom input{ flex:1; }
+.bid-custom button{ white-space:nowrap; }
+
+.sidebar-title{
+  font-family: var(--font-mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color: var(--gold-bright); margin-bottom:10px;
+}
+.team-card{
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border: 1px solid var(--panel-line);
+}
+.team-card.me{ border-color: var(--gold); }
+.team-card-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;}
+.team-card-name{ font-weight:800; }
+.team-card-budget{ font-family: var(--font-mono); font-size:13px; color: var(--gold-bright); }
+.team-slots{ display:flex; gap:4px; flex-wrap:wrap; }
+.slot{
+  font-size: 10px; font-family: var(--font-mono);
+  background: rgba(255,255,255,0.08);
+  padding: 3px 7px; border-radius: 5px; color: var(--silver);
+}
+.slot.filled{ background: var(--gold); color:#201703; font-weight:700; }
+
+/* sold overlay */
+.sold-overlay{
+  position:fixed; inset:0; background: rgba(5,15,9,0.88);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index: 50; gap: 10px; text-align:center; padding:20px;
+  animation: fadeIn .25s ease;
+}
+@keyframes fadeIn{ from{opacity:0;} to{opacity:1;} }
+.sold-stamp{
+  font-family: var(--font-display); font-size: clamp(48px,10vw,90px);
+  color: var(--gold-bright); letter-spacing:4px; text-transform:uppercase;
+  transform: rotate(-4deg);
+  border: 6px solid var(--gold-bright);
+  padding: 6px 26px;
+}
+.sold-unsold{ color: var(--claret-bright); border-color: var(--claret-bright); }
+.sold-detail{ font-size:18px; color: var(--white); font-weight:700; }
+.sold-detail b{ color: var(--gold-bright); }
+
+/* finished */
+.finished-grid{
+  display:grid; grid-template-columns: 1fr; gap: 18px; width:100%; max-width: 900px;
+}
+@media(min-width:700px){ .finished-grid{ grid-template-columns: 1fr 1fr; } }
+.final-squad-title{ display:flex; justify-content:space-between; align-items:center; }
+.final-player-row{ display:flex; justify-content:space-between; padding: 7px 0; border-bottom: 1px dashed var(--panel-line); font-size:14px;}
+.final-player-row:last-child{ border-bottom:none; }
+.crown{ font-size:12px; color: var(--gold-bright); font-family:var(--font-mono); letter-spacing:1px; }
+
+.footnote{ font-size:12px; color: rgba(247,244,236,0.45); text-align:center; margin-top: 20px; max-width:480px; }
+
+.error-text{ color: var(--claret-bright); font-size:13px; font-weight:700; min-height:16px; }
+
+/* ---------- AI match simulation ---------- */
+.sim-panel{ width:100%; max-width:900px; margin-top:30px; }
+.sim-divider{ display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+.sim-divider::before, .sim-divider::after{ content:""; flex:1; height:1px; background: var(--panel-line); }
+.sim-cta{ display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center; padding: 26px 20px; }
+.spinner{
+  width:26px; height:26px; border-radius:50%;
+  border: 3px solid rgba(233,195,74,0.25); border-top-color: var(--gold-bright);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin{ to{ transform: rotate(360deg); } }
+.sim-progress-track{ width:100%; height:10px; background:rgba(0,0,0,0.3); border-radius:6px; overflow:hidden; border:1px solid var(--panel-line); }
+.sim-progress-bar{ height:100%; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); }
+.sim-clock{ font-family:var(--font-mono); font-size:13px; color:var(--silver); text-align:center; }
+.sim-ticker{ display:flex; flex-direction:column-reverse; gap:6px; max-height:230px; overflow-y:auto; margin-top:16px; }
+.sim-ticker-item{ font-size:13px; padding:9px 12px; background: rgba(0,0,0,0.22); border-radius:6px; border-left:3px solid var(--gold); animation: tickerIn .3s ease; }
+.sim-ticker-item.ft{ border-left-color: var(--claret-bright); font-weight:800; }
+@keyframes tickerIn{ from{opacity:0; transform:translateY(-4px);} to{opacity:1; transform:translateY(0);} }
+.bracket{ display:flex; flex-direction:column; gap:16px; margin-top:18px; }
+.bracket-round-title{ font-family:var(--font-mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--gold-bright); }
+.bracket-match{ display:flex; justify-content:space-between; align-items:center; gap:10px; background:rgba(0,0,0,0.2); border-radius:8px; padding:10px 14px; margin-top:6px; flex-wrap:wrap; }
+.bracket-match .teams{ display:flex; gap:8px; align-items:center; font-weight:700; font-size:14px; }
+.bracket-match .score{ font-family: var(--font-mono); font-weight:700; color: var(--gold-bright); }
+.tag{ font-family:var(--font-mono); font-size:9px; letter-spacing:1px; padding:3px 8px; border-radius:10px; text-transform:uppercase; white-space:nowrap;}
+.tag-live{ background: var(--claret); color:var(--white); animation: pulse .6s infinite alternate; }
+.tag-ft{ background: var(--gold); color:#201703; }
+.tag-upcoming{ background: rgba(255,255,255,0.08); color: var(--silver); }
+.champion-banner{ text-align:center; margin: 26px 0 10px; }
+.champion-banner .trophy{ font-size:38px; display:block; margin-bottom:4px; }
+.champion-banner .name{ font-family:var(--font-display); font-size: clamp(28px,6vw,42px); color:var(--gold-bright); text-transform:uppercase; letter-spacing:1px; }
+.champion-banner .reason{ color:var(--silver); font-size:14px; margin-top:6px; max-width:460px; margin-left:auto; margin-right:auto; }
+.analytics-grid{ display:grid; grid-template-columns:1fr; gap:14px; margin-top:16px; }
+@media(min-width:700px){ .analytics-grid{ grid-template-columns:1fr 1fr; } }
+.analytics-card{ background:rgba(0,0,0,0.2); border-radius:10px; padding:14px 16px; border:1px solid var(--panel-line); }
+.analytics-card.champion{ border-color:var(--gold); box-shadow:0 0 0 1px var(--gold), 0 0 18px rgba(201,162,39,0.25); }
+.analytics-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; }
+.analytics-name{ font-weight:800; font-size:15px; }
+.analytics-rating{ font-family:var(--font-display); font-size:26px; color:var(--gold-bright); }
+.analytics-line{ font-size:13px; color:var(--silver); margin-top:5px; line-height:1.4; }
+.analytics-line b{ color: var(--white); }
+.sim-note{ font-size:11px; color: rgba(247,244,236,0.4); text-align:center; margin-top:14px; }
+
+/* ---------- new: pass button, GK rule, lobby settings, scoreboard ---------- */
+.btn-pass{ background: rgba(255,255,255,0.08); color: var(--white); border:1px solid var(--panel-line); }
+.btn-pass:hover:not(:disabled){ border-color: var(--claret-bright); color: var(--claret-bright); }
+.gk-note{
+  font-size:12px; color: var(--gold-bright); background: rgba(201,162,39,0.12);
+  border: 1px dashed var(--gold); border-radius:8px; padding:8px 10px; text-align:center;
+}
+.settings-panel{ width:100%; display:flex; flex-direction:column; gap:12px; }
+.settings-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+.settings-label{ font-weight:700; font-size:14px; }
+.settings-sub{ font-size:11px; color: var(--silver); }
+.toggle-btn{ background: rgba(255,255,255,0.08); color: var(--silver); border:1px solid var(--panel-line); padding:8px 14px; font-size:12px; }
+.toggle-btn.on{ background: var(--gold); color:#201703; border-color: var(--gold); }
+.seg-group{ display:flex; gap:6px; }
+.seg-btn{ background: rgba(255,255,255,0.08); color: var(--silver); border:1px solid var(--panel-line); padding:8px 14px; font-size:12px; }
+.seg-btn.on{ background: var(--claret); color: var(--white); border-color: var(--claret); }
+.stepper{ display:flex; align-items:center; gap:10px; }
+.stepper button{ padding: 8px 13px; }
+.stepper .count{ font-family: var(--font-mono); font-weight:700; min-width:16px; text-align:center; }
+
+.live-scoreboard{
+  width:100%; max-width:420px;
+  background: linear-gradient(160deg, rgba(0,0,0,0.35), rgba(0,0,0,0.15));
+  border: 1px solid var(--panel-line);
+  border-radius: 12px;
+  padding: 14px 18px;
+  text-align:center;
+  margin-bottom: 18px;
+}
+.live-scoreboard .lbl{ font-family: var(--font-mono); font-size:10px; letter-spacing:2px; color: var(--gold-bright); text-transform:uppercase; }
+.live-scoreboard.is-live .lbl{ color: var(--claret-bright); animation: pulse .6s infinite alternate; }
+.live-scoreboard .row{ display:flex; align-items:center; justify-content:center; gap:14px; margin-top:6px; }
+.live-scoreboard .team{ font-weight:800; font-size:15px; flex:1; text-align:right; }
+.live-scoreboard .team.b{ text-align:left; }
+.live-scoreboard .score{ font-family: var(--font-display); font-size:30px; color: var(--white); letter-spacing:2px; }
+
+.music-toggle-btn{
+  position: fixed; bottom: 18px; right: 18px; z-index: 60;
+  width: 46px; height: 46px; border-radius: 50%;
+  background: var(--panel); border: 1px solid var(--panel-line);
+  color: var(--white); font-size: 20px; cursor:pointer;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  display:flex; align-items:center; justify-content:center;
+  padding:0;
+}
+.music-toggle-btn.on{ background: var(--gold); color:#201703; border-color: var(--gold); }
+
+@media (prefers-reduced-motion: reduce){
+  .sticker, .sold-overlay, .timer.urgent{ animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<button id="music-toggle" class="music-toggle-btn" title="Toggle background music">\ud83d\udd07</button>
+
+<script>
+(function(){
+
+// ---------------- constants ----------------
+var BUDGET_START = 50000;
+var SQUAD_SIZE = 5;
+var AUCTION_SECONDS = 15;
+var BID_TIME_EXTENSION_MS = 3000;
+var SOLD_BANNER_MS = 2600;
+var POLL_MS = 1500;
+var HOST_TICK_MS = 900;
+var CLAUDE_MODEL = "claude-sonnet-4-6";
+var SIM_DURATION_MS = 20000;
+var AI_NAMES = ["CPU Atl\u00e9tico", "CPU United", "CPU Rovers", "CPU Athletic"];
+
+var PLAYERS_PL = [
+  // Legends
+  {id:"p1", name:"Peter Schmeichel", pos:"GK", club:"Man Utd", tier:"Legend"},
+  {id:"p2", name:"David Seaman", pos:"GK", club:"Arsenal", tier:"Legend"},
+  {id:"p3", name:"Petr Cech", pos:"GK", club:"Chelsea", tier:"Legend"},
+  {id:"p4", name:"Edwin van der Sar", pos:"GK", club:"Man Utd", tier:"Legend"},
+  {id:"p4b", name:"Tim Howard", pos:"GK", club:"Everton", tier:"Legend"},
+  {id:"p5", name:"Rio Ferdinand", pos:"DEF", club:"Man Utd", tier:"Legend"},
+  {id:"p6", name:"John Terry", pos:"DEF", club:"Chelsea", tier:"Legend"},
+  {id:"p7", name:"Ashley Cole", pos:"DEF", club:"Arsenal", tier:"Legend"},
+  {id:"p8", name:"Nemanja Vidic", pos:"DEF", club:"Man Utd", tier:"Legend"},
+  {id:"p9", name:"Sol Campbell", pos:"DEF", club:"Arsenal", tier:"Legend"},
+  {id:"p10", name:"Jamie Carragher", pos:"DEF", club:"Liverpool", tier:"Legend"},
+  {id:"p10b", name:"Gary Neville", pos:"DEF", club:"Man Utd", tier:"Legend"},
+  {id:"p10c", name:"Patrice Evra", pos:"DEF", club:"Man Utd", tier:"Legend"},
+  {id:"p10d", name:"Jaap Stam", pos:"DEF", club:"Man Utd", tier:"Legend"},
+  {id:"p10e", name:"Vincent Kompany", pos:"DEF", club:"Man City", tier:"Legend"},
+  {id:"p11", name:"Steven Gerrard", pos:"MID", club:"Liverpool", tier:"Legend"},
+  {id:"p12", name:"Paul Scholes", pos:"MID", club:"Man Utd", tier:"Legend"},
+  {id:"p13", name:"Patrick Vieira", pos:"MID", club:"Arsenal", tier:"Legend"},
+  {id:"p14", name:"Roy Keane", pos:"MID", club:"Man Utd", tier:"Legend"},
+  {id:"p15", name:"David Beckham", pos:"MID", club:"Man Utd", tier:"Legend"},
+  {id:"p16", name:"Frank Lampard", pos:"MID", club:"Chelsea", tier:"Legend"},
+  {id:"p16b", name:"Ryan Giggs", pos:"MID", club:"Man Utd", tier:"Legend"},
+  {id:"p16c", name:"Yaya Toure", pos:"MID", club:"Man City", tier:"Legend"},
+  {id:"p16d", name:"Cesc Fabregas", pos:"MID", club:"Arsenal", tier:"Legend"},
+  {id:"p16e", name:"Robert Pires", pos:"MID", club:"Arsenal", tier:"Legend"},
+  {id:"p17", name:"Thierry Henry", pos:"FWD", club:"Arsenal", tier:"Legend"},
+  {id:"p18", name:"Alan Shearer", pos:"FWD", club:"Newcastle", tier:"Legend"},
+  {id:"p19", name:"Didier Drogba", pos:"FWD", club:"Chelsea", tier:"Legend"},
+  {id:"p20", name:"Wayne Rooney", pos:"FWD", club:"Man Utd", tier:"Legend"},
+  {id:"p21", name:"Dennis Bergkamp", pos:"FWD", club:"Arsenal", tier:"Legend"},
+  {id:"p22", name:"Robbie Fowler", pos:"FWD", club:"Liverpool", tier:"Legend"},
+  {id:"p22b", name:"Ian Wright", pos:"FWD", club:"Arsenal", tier:"Legend"},
+  {id:"p22c", name:"Michael Owen", pos:"FWD", club:"Liverpool", tier:"Legend"},
+  {id:"p22d", name:"Eric Cantona", pos:"FWD", club:"Man Utd", tier:"Legend"},
+  {id:"p22e", name:"Ruud van Nistelrooy", pos:"FWD", club:"Man Utd", tier:"Legend"},
+  {id:"p22f", name:"Sergio Ag\u00fcero", pos:"FWD", club:"Man City", tier:"Legend"},
+  {id:"p22g", name:"Luis Su\u00e1rez", pos:"FWD", club:"Liverpool", tier:"Legend"},
+  // Current
+  {id:"p23", name:"Alisson Becker", pos:"GK", club:"Liverpool", tier:"Current"},
+  {id:"p24", name:"Ederson", pos:"GK", club:"Man City", tier:"Current"},
+  {id:"p25", name:"David Raya", pos:"GK", club:"Arsenal", tier:"Current"},
+  {id:"p26", name:"Jordan Pickford", pos:"GK", club:"Everton", tier:"Current"},
+  {id:"p26b", name:"Emiliano Mart\u00ednez", pos:"GK", club:"Aston Villa", tier:"Current"},
+  {id:"p26c", name:"Nick Pope", pos:"GK", club:"Newcastle", tier:"Current"},
+  {id:"p27", name:"Virgil van Dijk", pos:"DEF", club:"Liverpool", tier:"Current"},
+  {id:"p28", name:"William Saliba", pos:"DEF", club:"Arsenal", tier:"Current"},
+  {id:"p29", name:"Trent Alexander-Arnold", pos:"DEF", club:"Real Madrid", tier:"Current"},
+  {id:"p30", name:"Reece James", pos:"DEF", club:"Chelsea", tier:"Current"},
+  {id:"p31", name:"Levi Colwill", pos:"DEF", club:"Chelsea", tier:"Current"},
+  {id:"p32", name:"Gabriel Magalh\u00e3es", pos:"DEF", club:"Arsenal", tier:"Current"},
+  {id:"p32b", name:"Josko Gvardiol", pos:"DEF", club:"Man City", tier:"Current"},
+  {id:"p32c", name:"Micky van de Ven", pos:"DEF", club:"Tottenham", tier:"Current"},
+  {id:"p32d", name:"Destiny Udogie", pos:"DEF", club:"Tottenham", tier:"Current"},
+  {id:"p33", name:"Declan Rice", pos:"MID", club:"Arsenal", tier:"Current"},
+  {id:"p34", name:"Bruno Fernandes", pos:"MID", club:"Man Utd", tier:"Current"},
+  {id:"p35", name:"Rodri", pos:"MID", club:"Man City", tier:"Current"},
+  {id:"p36", name:"Martin \u00d8degaard", pos:"MID", club:"Arsenal", tier:"Current"},
+  {id:"p37", name:"Cole Palmer", pos:"MID", club:"Chelsea", tier:"Current"},
+  {id:"p38", name:"Moises Caicedo", pos:"MID", club:"Chelsea", tier:"Current"},
+  {id:"p38b", name:"Alexis Mac Allister", pos:"MID", club:"Liverpool", tier:"Current"},
+  {id:"p38c", name:"Dominik Szoboszlai", pos:"MID", club:"Liverpool", tier:"Current"},
+  {id:"p38d", name:"Kobbie Mainoo", pos:"MID", club:"Man Utd", tier:"Current"},
+  {id:"p38e", name:"James Maddison", pos:"MID", club:"Tottenham", tier:"Current"},
+  {id:"p39", name:"Erling Haaland", pos:"FWD", club:"Man City", tier:"Current"},
+  {id:"p40", name:"Mohamed Salah", pos:"FWD", club:"Liverpool", tier:"Current"},
+  {id:"p41", name:"Bukayo Saka", pos:"FWD", club:"Arsenal", tier:"Current"},
+  {id:"p42", name:"Ollie Watkins", pos:"FWD", club:"Aston Villa", tier:"Current"},
+  {id:"p43", name:"Son Heung-min", pos:"FWD", club:"Tottenham", tier:"Current"},
+  {id:"p44", name:"Phil Foden", pos:"FWD", club:"Man City", tier:"Current"},
+  {id:"p44b", name:"Marcus Rashford", pos:"FWD", club:"Man Utd", tier:"Current"},
+  {id:"p44c", name:"Kai Havertz", pos:"FWD", club:"Arsenal", tier:"Current"},
+  {id:"p44d", name:"Gabriel Jesus", pos:"FWD", club:"Arsenal", tier:"Current"},
+  {id:"p44e", name:"Jarrod Bowen", pos:"FWD", club:"West Ham", tier:"Current"},
+  {id:"p46", name:"Andr\u00e9 Onana", pos:"GK", club:"Man Utd", tier:"Current"},
+  {id:"p47", name:"Marc Guehi", pos:"DEF", club:"Crystal Palace", tier:"Current"},
+  {id:"p48", name:"Antonee Robinson", pos:"DEF", club:"Fulham", tier:"Current"},
+  {id:"p49", name:"Pedro Porro", pos:"DEF", club:"Tottenham", tier:"Current"},
+  {id:"p50", name:"Joachim Andersen", pos:"DEF", club:"Crystal Palace", tier:"Current"},
+  {id:"p51", name:"Ezri Konsa", pos:"DEF", club:"Aston Villa", tier:"Current"},
+  {id:"p52", name:"Youri Tielemans", pos:"MID", club:"Aston Villa", tier:"Current"},
+  {id:"p53", name:"Morgan Gibbs-White", pos:"MID", club:"Nottingham Forest", tier:"Current"},
+  {id:"p54", name:"Bryan Mbeumo", pos:"FWD", club:"Man Utd", tier:"Current"},
+  {id:"p55", name:"Chris Wood", pos:"FWD", club:"Nottingham Forest", tier:"Current"},
+  {id:"p56", name:"Yoane Wissa", pos:"FWD", club:"Brentford", tier:"Current"},
+  {id:"p57", name:"Anthony Gordon", pos:"FWD", club:"Newcastle", tier:"Current"},
+  {id:"p58", name:"Jean-Philippe Mateta", pos:"FWD", club:"Crystal Palace", tier:"Current"},
+  {id:"p59", name:"Bruno Guimar\u00e3es", pos:"MID", club:"Newcastle", tier:"Current"},
+  {id:"p60", name:"Danny Murphy", pos:"MID", club:"Liverpool", tier:"Legend"},
+  {id:"p61", name:"Emile Heskey", pos:"FWD", club:"Liverpool", tier:"Legend"},
+  {id:"p62", name:"Jermain Defoe", pos:"FWD", club:"Tottenham", tier:"Legend"},
+  {id:"p63", name:"Les Ferdinand", pos:"FWD", club:"Newcastle", tier:"Legend"}
+];
+
+// Curated selection of notable Indian Super League players across the competition's history
+// (marquee overseas signings and prominent Indian internationals). Not an exhaustive database.
+var PLAYERS_ISL = [
+  {id:"i1", name:"Gurpreet Singh Sandhu", pos:"GK", club:"Bengaluru FC", tier:"Current"},
+  {id:"i2", name:"Amrinder Singh", pos:"GK", club:"Mumbai City", tier:"Current"},
+  {id:"i3", name:"David James", pos:"GK", club:"Kerala Blasters", tier:"Legend"},
+  {id:"i4", name:"Subrata Paul", pos:"GK", club:"NorthEast United", tier:"Legend"},
+  {id:"i5", name:"Sandesh Jhingan", pos:"DEF", club:"Kerala Blasters", tier:"Current"},
+  {id:"i6", name:"Rahul Bheke", pos:"DEF", club:"Bengaluru FC", tier:"Current"},
+  {id:"i7", name:"Adil Khan", pos:"DEF", club:"Odisha FC", tier:"Current"},
+  {id:"i8", name:"Anas Edathodika", pos:"DEF", club:"Jamshedpur FC", tier:"Legend"},
+  {id:"i9", name:"Subhasish Bose", pos:"DEF", club:"Mohun Bagan", tier:"Current"},
+  {id:"i10", name:"Roberto Carlos", pos:"DEF", club:"Delhi Dynamos", tier:"Legend"},
+  {id:"i11", name:"Marco Materazzi", pos:"DEF", club:"Chennaiyin FC", tier:"Legend"},
+  {id:"i12", name:"Sunil Chhetri", pos:"FWD", club:"Bengaluru FC", tier:"Legend"},
+  {id:"i13", name:"Bartholomew Ogbeche", pos:"FWD", club:"NorthEast United", tier:"Legend"},
+  {id:"i14", name:"Ferran Corominas", pos:"FWD", club:"FC Goa", tier:"Legend"},
+  {id:"i15", name:"Diego Forl\u00e1n", pos:"FWD", club:"Mumbai City", tier:"Legend"},
+  {id:"i16", name:"Alessandro Del Piero", pos:"FWD", club:"Delhi Dynamos", tier:"Legend"},
+  {id:"i17", name:"Nicolas Anelka", pos:"FWD", club:"Mumbai City", tier:"Legend"},
+  {id:"i18", name:"David Trezeguet", pos:"FWD", club:"Pune City", tier:"Legend"},
+  {id:"i19", name:"Jeje Lalpekhlua", pos:"FWD", club:"Chennaiyin FC", tier:"Current"},
+  {id:"i20", name:"Chhangte Lallianzuala", pos:"FWD", club:"Mumbai City", tier:"Current"},
+  {id:"i21", name:"Manvir Singh", pos:"FWD", club:"Mohun Bagan", tier:"Current"},
+  {id:"i22", name:"Liston Colaco", pos:"FWD", club:"Mohun Bagan", tier:"Current"},
+  {id:"i23", name:"Brandon Fernandes", pos:"MID", club:"FC Goa", tier:"Current"},
+  {id:"i24", name:"Rowllin Borges", pos:"MID", club:"Mumbai City", tier:"Current"},
+  {id:"i25", name:"Udanta Singh", pos:"MID", club:"Bengaluru FC", tier:"Current"},
+  {id:"i26", name:"Ashique Kuruniyan", pos:"MID", club:"FC Goa", tier:"Current"},
+  {id:"i27", name:"Apuia Ralte", pos:"MID", club:"Mumbai City", tier:"Current"},
+  {id:"i28", name:"Iain Hume", pos:"FWD", club:"Kerala Blasters", tier:"Legend"},
+  {id:"i29", name:"Elano Blumer", pos:"MID", club:"Chennaiyin FC", tier:"Legend"},
+  {id:"i30", name:"Luis Garcia", pos:"MID", club:"Atletico de Kolkata", tier:"Legend"},
+  {id:"i31", name:"Florent Malouda", pos:"MID", club:"Delhi Dynamos", tier:"Legend"},
+  {id:"i32", name:"Lucian Goian", pos:"DEF", club:"Mumbai City", tier:"Legend"},
+  {id:"i33", name:"Marcelinho", pos:"FWD", club:"Delhi Dynamos", tier:"Legend"},
+  {id:"i34", name:"Roy Krishna", pos:"FWD", club:"Odisha FC", tier:"Current"},
+  {id:"i35", name:"Sahal Abdul Samad", pos:"MID", club:"Mohun Bagan", tier:"Current"},
+  {id:"i36", name:"Anirudh Thapa", pos:"MID", club:"Mohun Bagan", tier:"Current"},
+  {id:"i37", name:"Bipin Singh", pos:"FWD", club:"Mumbai City", tier:"Current"},
+  {id:"i38", name:"Hugo Boumous", pos:"MID", club:"Odisha FC", tier:"Current"},
+  {id:"i39", name:"Vishal Kaith", pos:"GK", club:"Mohun Bagan", tier:"Current"},
+  {id:"i40", name:"Prabhsukhan Gill", pos:"GK", club:"East Bengal", tier:"Current"},
+  {id:"i41", name:"Akash Mishra", pos:"DEF", club:"Mumbai City", tier:"Current"},
+  {id:"i42", name:"Anwar Ali", pos:"DEF", club:"East Bengal", tier:"Current"},
+  {id:"i43", name:"Pritam Kotal", pos:"DEF", club:"Kerala Blasters", tier:"Current"},
+  {id:"i44", name:"Cleiton Silva", pos:"FWD", club:"East Bengal", tier:"Current"},
+  {id:"i45", name:"Mourtada Fall", pos:"DEF", club:"Odisha FC", tier:"Current"},
+  {id:"i46", name:"Ahmed Jahouh", pos:"MID", club:"Odisha FC", tier:"Current"},
+  {id:"i47", name:"Dimitri Petratos", pos:"FWD", club:"Mohun Bagan", tier:"Current"},
+  {id:"i48", name:"Edu Bedia", pos:"MID", club:"Gokulam Kerala", tier:"Legend"},
+  {id:"i49", name:"Asish Rai", pos:"DEF", club:"Mohun Bagan", tier:"Current"},
+  {id:"i50", name:"Mandar Rao Dessai", pos:"DEF", club:"East Bengal", tier:"Current"},
+  {id:"i51", name:"Stiven Mendoza", pos:"FWD", club:"Chennaiyin FC", tier:"Legend"},
+  {id:"i52", name:"C.K. Vineeth", pos:"FWD", club:"Kerala Blasters", tier:"Legend"},
+  {id:"i53", name:"Adrian Luna", pos:"MID", club:"Kerala Blasters", tier:"Current"},
+  {id:"i54", name:"Laxmikant Kattimani", pos:"GK", club:"Hyderabad FC", tier:"Current"},
+  {id:"i55", name:"Naorem Mahesh Singh", pos:"FWD", club:"East Bengal", tier:"Current"},
+  {id:"i56", name:"Tiri", pos:"DEF", club:"Mumbai City", tier:"Current"},
+  {id:"i57", name:"Mailson Alves", pos:"DEF", club:"Chennaiyin FC", tier:"Legend"},
+  {id:"i58", name:"Apoula Edel", pos:"GK", club:"Atletico de Kolkata", tier:"Legend"},
+  {id:"i59", name:"Mehtab Hossain", pos:"MID", club:"Kerala Blasters", tier:"Legend"},
+  {id:"i60", name:"Greg Stewart", pos:"FWD", club:"Mohun Bagan", tier:"Current"},
+  {id:"i61", name:"Chinglensana Singh", pos:"DEF", club:"Bengaluru FC", tier:"Current"},
+  {id:"i62", name:"Vikram Partap Singh", pos:"FWD", club:"Mumbai City", tier:"Current"},
+  {id:"i63", name:"Javi Hernandez", pos:"MID", club:"Bengaluru FC", tier:"Current"},
+  {id:"i64", name:"Diego Mauricio", pos:"FWD", club:"Odisha FC", tier:"Current"},
+  {id:"i65", name:"Noah Sadaoui", pos:"FWD", club:"Kerala Blasters", tier:"Current"},
+  {id:"i66", name:"Phurba Lachenpa", pos:"GK", club:"Mumbai City", tier:"Current"},
+  {id:"i67", name:"Helder Postiga", pos:"FWD", club:"Atletico de Kolkata", tier:"Legend"},
+  {id:"i68", name:"Carlos Pena", pos:"DEF", club:"FC Goa", tier:"Legend"},
+  {id:"i69", name:"Carl McHugh", pos:"MID", club:"FC Goa", tier:"Current"},
+  {id:"i70", name:"Ishan Pandita", pos:"FWD", club:"Kerala Blasters", tier:"Current"},
+  {id:"i71", name:"Kiyan Nassiri", pos:"FWD", club:"Chennaiyin FC", tier:"Current"},
+  {id:"i72", name:"Sivasakthi Narayanan", pos:"FWD", club:"Bengaluru FC", tier:"Current"},
+  {id:"i73", name:"Rehenesh TP", pos:"GK", club:"Jamshedpur FC", tier:"Current"},
+  {id:"i74", name:"Borja Herrera", pos:"MID", club:"FC Goa", tier:"Current"},
+  {id:"i75", name:"Jorge Pereyra Diaz", pos:"FWD", club:"Bengaluru FC", tier:"Current"}
+];
+
+// Legends-only leagues: curated all-time greats, not tied to current squads.
+var PLAYERS_LALIGA = [
+  {id:"l1", name:"Iker Casillas", pos:"GK", club:"Real Madrid", tier:"Legend"},
+  {id:"l2", name:"V\u00edctor Vald\u00e9s", pos:"GK", club:"Barcelona", tier:"Legend"},
+  {id:"l3", name:"Santiago Ca\u00f1izares", pos:"GK", club:"Valencia", tier:"Legend"},
+  {id:"l4", name:"Sergio Ramos", pos:"DEF", club:"Real Madrid", tier:"Legend"},
+  {id:"l5", name:"Carles Puyol", pos:"DEF", club:"Barcelona", tier:"Legend"},
+  {id:"l6", name:"Fernando Hierro", pos:"DEF", club:"Real Madrid", tier:"Legend"},
+  {id:"l7", name:"Gerard Piqu\u00e9", pos:"DEF", club:"Barcelona", tier:"Legend"},
+  {id:"l8", name:"Rafael M\u00e1rquez", pos:"DEF", club:"Barcelona", tier:"Legend"},
+  {id:"l9", name:"Roberto Carlos", pos:"DEF", club:"Real Madrid", tier:"Legend"},
+  {id:"l10", name:"Xavi Hern\u00e1ndez", pos:"MID", club:"Barcelona", tier:"Legend"},
+  {id:"l11", name:"Andr\u00e9s Iniesta", pos:"MID", club:"Barcelona", tier:"Legend"},
+  {id:"l12", name:"Xabi Alonso", pos:"MID", club:"Real Madrid", tier:"Legend"},
+  {id:"l13", name:"Guti", pos:"MID", club:"Real Madrid", tier:"Legend"},
+  {id:"l14", name:"Michael Laudrup", pos:"MID", club:"Barcelona", tier:"Legend"},
+  {id:"l15", name:"Luis Enrique", pos:"MID", club:"Barcelona", tier:"Legend"},
+  {id:"l16", name:"Ra\u00fal Gonz\u00e1lez", pos:"FWD", club:"Real Madrid", tier:"Legend"},
+  {id:"l17", name:"Ronaldo Naz\u00e1rio", pos:"FWD", club:"Real Madrid", tier:"Legend"},
+  {id:"l18", name:"Ronaldinho", pos:"FWD", club:"Barcelona", tier:"Legend"},
+  {id:"l19", name:"Samuel Eto'o", pos:"FWD", club:"Barcelona", tier:"Legend"},
+  {id:"l20", name:"David Villa", pos:"FWD", club:"Barcelona", tier:"Legend"},
+  {id:"l21", name:"Fernando Torres", pos:"FWD", club:"Atl\u00e9tico Madrid", tier:"Legend"},
+  {id:"l22", name:"Hugo S\u00e1nchez", pos:"FWD", club:"Real Madrid", tier:"Legend"},
+  {id:"l23", name:"Emilio Butrague\u00f1o", pos:"FWD", club:"Real Madrid", tier:"Legend"}
+];
+
+var PLAYERS_SERIEA = [
+  {id:"s1", name:"Gianluigi Buffon", pos:"GK", club:"Juventus", tier:"Legend"},
+  {id:"s2", name:"Dino Zoff", pos:"GK", club:"Juventus", tier:"Legend"},
+  {id:"s3", name:"Francesco Toldo", pos:"GK", club:"Inter Milan", tier:"Legend"},
+  {id:"s4", name:"Paolo Maldini", pos:"DEF", club:"AC Milan", tier:"Legend"},
+  {id:"s5", name:"Alessandro Nesta", pos:"DEF", club:"AC Milan", tier:"Legend"},
+  {id:"s6", name:"Fabio Cannavaro", pos:"DEF", club:"Juventus", tier:"Legend"},
+  {id:"s7", name:"Giorgio Chiellini", pos:"DEF", club:"Juventus", tier:"Legend"},
+  {id:"s8", name:"Javier Zanetti", pos:"DEF", club:"Inter Milan", tier:"Legend"},
+  {id:"s9", name:"Franco Baresi", pos:"DEF", club:"AC Milan", tier:"Legend"},
+  {id:"s10", name:"Andrea Pirlo", pos:"MID", club:"Juventus", tier:"Legend"},
+  {id:"s11", name:"Gennaro Gattuso", pos:"MID", club:"AC Milan", tier:"Legend"},
+  {id:"s12", name:"Clarence Seedorf", pos:"MID", club:"AC Milan", tier:"Legend"},
+  {id:"s13", name:"Rui Costa", pos:"MID", club:"AC Milan", tier:"Legend"},
+  {id:"s14", name:"Zinedine Zidane", pos:"MID", club:"Juventus", tier:"Legend"},
+  {id:"s15", name:"Esteban Cambiasso", pos:"MID", club:"Inter Milan", tier:"Legend"},
+  {id:"s16", name:"Francesco Totti", pos:"FWD", club:"Roma", tier:"Legend"},
+  {id:"s17", name:"Roberto Baggio", pos:"FWD", club:"Juventus", tier:"Legend"},
+  {id:"s18", name:"Filippo Inzaghi", pos:"FWD", club:"AC Milan", tier:"Legend"},
+  {id:"s19", name:"Gabriel Batistuta", pos:"FWD", club:"Fiorentina", tier:"Legend"},
+  {id:"s20", name:"Christian Vieri", pos:"FWD", club:"Inter Milan", tier:"Legend"},
+  {id:"s21", name:"Alessandro Del Piero", pos:"FWD", club:"Juventus", tier:"Legend"},
+  {id:"s22", name:"Ronaldo Naz\u00e1rio", pos:"FWD", club:"Inter Milan", tier:"Legend"}
+];
+
+var LEAGUES = {
+  PL: { label: "Premier League", note: "Current stars and legends of the English top flight.", legendsOnly: false },
+  ISL: { label: "Indian Super League", note: "Curated ISL roster \u2014 marquee overseas signings plus notable Indian internationals. Not exhaustive.", legendsOnly: false },
+  LALIGA: { label: "La Liga Legends", note: "All-time Real Madrid, Barcelona and Atl\u00e9tico greats. Legends only.", legendsOnly: true },
+  SERIEA: { label: "Serie A Legends", note: "All-time Juventus, AC Milan, Inter and Roma greats. Legends only.", legendsOnly: true }
+};
+
+function hashStr(s){
+  var h = 0;
+  for (var i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) | 0; }
+  return Math.abs(h);
+}
+// League+tier baselines: this is what actually fixes rating fairness across leagues.
+// Elite legends (PL/LaLiga/SerieA) sit highest; ISL's marquee "legends" (mostly
+// well-traveled overseas veterans) and domestic ISL players sit meaningfully lower,
+// reflecting the difference in competition level rather than random chance.
+var LEAGUE_TIER_BASE = {
+  "PL_Legend": 87, "PL_Current": 83,
+  "LALIGA_Legend": 90, "SERIEA_Legend": 89,
+  "ISL_Legend": 79, "ISL_Current": 67
+};
+function genStats(p){
+  var h = hashStr(p.id + p.name);
+  var base = LEAGUE_TIER_BASE[p.league+"_"+p.tier] || 75;
+  var spread = 10; // narrower spread = ratings track the base level instead of feeling random
+  function pick(shift){
+    var v = (Math.floor(h/Math.pow(2,shift)) % spread);
+    return Math.max(35, Math.min(99, base + v - Math.floor(spread/2)));
+  }
+  var pac = pick(1), sho = pick(3), pas = pick(5), dri = pick(7), def = pick(9), phy = pick(11);
+  if (p.pos === "GK"){ def = Math.min(99,def+12); phy = Math.min(99,phy+6); sho = Math.max(20,sho-45); dri = Math.max(25,dri-32); pas = Math.max(30,pas-16); }
+  else if (p.pos === "DEF"){ def = Math.min(99,def+13); phy = Math.min(99,phy+6); sho = Math.max(25,sho-16); }
+  else if (p.pos === "MID"){ pas = Math.min(99,pas+11); dri = Math.min(98,dri+6); }
+  else if (p.pos === "FWD"){ sho = Math.min(99,sho+13); pac = Math.min(98,pac+6); def = Math.max(15,def-24); }
+  var ovr = Math.round((pac+sho+pas+dri+def+phy)/6);
+  return { pac:pac, sho:sho, pas:pas, dri:dri, def:def, phy:phy, ovr:ovr };
+}
+
+var PLAYERS = [];
+PLAYERS_PL.forEach(function(p){ p.league = "PL"; var s = genStats(p); for (var k in s){ p[k]=s[k]; } PLAYERS.push(p); });
+PLAYERS_ISL.forEach(function(p){ p.league = "ISL"; var s = genStats(p); for (var k in s){ p[k]=s[k]; } PLAYERS.push(p); });
+PLAYERS_LALIGA.forEach(function(p){ p.league = "LALIGA"; var s = genStats(p); for (var k in s){ p[k]=s[k]; } PLAYERS.push(p); });
+PLAYERS_SERIEA.forEach(function(p){ p.league = "SERIEA"; var s = genStats(p); for (var k in s){ p[k]=s[k]; } PLAYERS.push(p); });
+
+var PLAYERS_BY_ID = {};
+PLAYERS.forEach(function(p){ PLAYERS_BY_ID[p.id] = p; });
+
+// ---------------- runtime identity (in-memory only) ----------------
+var myId = (crypto.randomUUID ? crypto.randomUUID() : ("id-"+Math.random().toString(36).slice(2)));
+var myName = "";
+var roomCode = "";
+var pollTimer = null;
+var hostTimer = null;
+var hostBusy = false;
+var lastRoom = null;
+var joinError = "";
+var landingMode = "create"; // create | join
+var soldBannerUntil = 0;
+
+// ---------------- audio (synthesized, no external files) ----------------
+var audioCtx = null;
+var musicOn = false;
+var musicNodes = null;
+var lastBidSignature = "";
+
+function ensureAudio(){
+  if (!audioCtx){
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
+  }
+  if (audioCtx && audioCtx.state === "suspended"){ audioCtx.resume().catch(function(){}); }
+  return audioCtx;
+}
+function playBidSound(){
+  var ctx = ensureAudio();
+  if (!ctx) return;
+  var t = ctx.currentTime;
+  var osc = ctx.createOscillator();
+  var gain = ctx.createGain();
+  osc.type = "triangle";
+  osc.frequency.setValueAtTime(520, t);
+  osc.frequency.exponentialRampToValueAtTime(760, t+0.09);
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(0.16, t+0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t+0.22);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(t); osc.stop(t+0.25);
+}
+function startMusic(){
+  var ctx = ensureAudio();
+  if (!ctx || musicNodes) return;
+  var master = ctx.createGain();
+  master.gain.value = 0.05;
+  master.connect(ctx.destination);
+  var freqs = [110, 164.81, 220]; // calm A2-E3-A3 pad
+  var oscs = freqs.map(function(f, i){
+    var o = ctx.createOscillator();
+    o.type = "sine";
+    o.frequency.value = f;
+    var g = ctx.createGain();
+    g.gain.value = 0.5/(i+1);
+    o.connect(g); g.connect(master);
+    o.start();
+    return o;
+  });
+  var lfo = ctx.createOscillator();
+  lfo.frequency.value = 0.05;
+  var lfoGain = ctx.createGain();
+  lfoGain.gain.value = 0.03;
+  lfo.connect(lfoGain); lfoGain.connect(master.gain);
+  lfo.start();
+  musicNodes = { master: master, oscs: oscs, lfo: lfo };
+}
+function stopMusic(){
+  if (!musicNodes) return;
+  musicNodes.oscs.forEach(function(o){ try{ o.stop(); }catch(e){} });
+  try{ musicNodes.lfo.stop(); }catch(e){}
+  musicNodes = null;
+}
+function toggleMusic(){
+  musicOn = !musicOn;
+  if (musicOn){ startMusic(); } else { stopMusic(); }
+  var btn = document.getElementById("music-toggle");
+  if (btn){
+    btn.textContent = musicOn ? "\ud83d\udd0a" : "\ud83d\udd07";
+    btn.className = "music-toggle-btn" + (musicOn ? " on" : "");
+  }
+}
+function checkBidSound(room){
+  if (!room || !room.current){ lastBidSignature = ""; return; }
+  var sig = room.current.playerId+":"+room.current.bid.bidderId+":"+room.current.bid.amount;
+  if (sig === lastBidSignature) return;
+  var prevPlayerId = lastBidSignature.split(":")[0];
+  var isNewBid = !!room.current.bid.bidderId && room.current.bid.amount > 0;
+  if (isNewBid && room.current.bid.bidderId !== myId && prevPlayerId === room.current.playerId){
+    playBidSound();
+  }
+  lastBidSignature = sig;
+}
+
+// ---------------- helpers ----------------
+function fmt(n){ return "$" + Math.max(0,Math.round(n)).toLocaleString("en-US"); }
+function genCode(){
+  var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  var s = "";
+  for (var i=0;i<5;i++){ s += chars[Math.floor(Math.random()*chars.length)]; }
+  return s;
+}
+function initials(name){
+  return name.split(" ").map(function(w){return w[0];}).join("").slice(0,3).toUpperCase();
+}
+function shuffle(arr){
+  var a = arr.slice();
+  for (var i=a.length-1;i>0;i--){
+    var j = Math.floor(Math.random()*(i+1));
+    var t=a[i]; a[i]=a[j]; a[j]=t;
+  }
+  return a;
+}
+function el(html){
+  var d = document.createElement("div");
+  d.innerHTML = html.trim();
+  return d.firstChild;
+}
+function squadCount(pl){ return (pl && pl.squad) ? pl.squad.length : 0; }
+function maxAllowedBid(pl){
+  if (!pl) return 0;
+  var remainingAfter = Math.max(0, (SQUAD_SIZE - squadCount(pl) - 1));
+  return Math.max(0, pl.budget - remainingAfter*1000);
+}
+function isRoomFull(room){
+  var ids = Object.keys(room.players);
+  return ids.length>0 && ids.every(function(id){ return squadCount(room.players[id]) >= SQUAD_SIZE; });
+}
+function hasGK(pl){ return !!(pl && pl.squad && pl.squad.some(function(s){ return s.pos === "GK"; })); }
+function needsGKNow(pl){ return squadCount(pl) === SQUAD_SIZE-1 && !hasGK(pl); }
+function anyoneNeedsGKNow(room){
+  return Object.keys(room.players).some(function(id){ return needsGKNow(room.players[id]); });
+}
+function canBidOn(pl, playerDef){
+  if (squadCount(pl) >= SQUAD_SIZE) return false;
+  if (needsGKNow(pl) && playerDef.pos !== "GK") return false;
+  return true;
+}
+function eligibleBidderIds(room, playerDef){
+  return Object.keys(room.players).filter(function(id){ return canBidOn(room.players[id], playerDef); });
+}
+
+// ---------------- storage wrappers (Supabase) ----------------
+// Fill these in with your own project's values: Supabase dashboard -> Settings -> API.
+// SUPABASE_URL looks like "https://xxxxxxxx.supabase.co"
+// SUPABASE_ANON_KEY is the long "anon public" key (safe to expose in client code).
+var SUPABASE_URL = "https://ehenlyupymzyzkvljxaq.supabase.co";
+var SUPABASE_ANON_KEY = "sb_publishable_da9yxtKoXaA2bRHEBA5Ndg_EnCfmvX5";
+var SUPABASE_CONFIGURED = SUPABASE_URL.indexOf("YOUR_SUPABASE_URL") === -1 && SUPABASE_ANON_KEY.indexOf("YOUR_SUPABASE_ANON_KEY") === -1;
+
+function supabaseHeaders(extra){
+  var h = {
+    "apikey": SUPABASE_ANON_KEY,
+    "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+    "Content-Type": "application/json"
+  };
+  if (extra){ for (var k in extra){ h[k] = extra[k]; } }
+  return h;
+}
+
+function saveRoom(room){
+  room.updatedAt = Date.now();
+  return fetch(SUPABASE_URL + "/rest/v1/rooms?on_conflict=code", {
+    method: "POST",
+    headers: supabaseHeaders({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
+    body: JSON.stringify([{ code: room.code, data: room, updated_at: new Date().toISOString() }])
+  }).then(function(res){
+    if (!res.ok) throw new Error("save failed: " + res.status);
+    return room;
+  }).catch(function(e){ console.error("save failed", e); return null; });
+}
+
+function loadRoom(code){
+  return fetch(SUPABASE_URL + "/rest/v1/rooms?code=eq." + encodeURIComponent(code) + "&select=data", {
+    method: "GET",
+    headers: supabaseHeaders()
+  }).then(function(res){
+    if (!res.ok) return null;
+    return res.json();
+  }).then(function(rows){
+    return (rows && rows.length) ? rows[0].data : null;
+  }).catch(function(e){ console.error("load failed", e); return null; });
+}
+
+// ---------------- render root ----------------
+function render(){
+  var app = document.getElementById("app");
+  app.innerHTML = "";
+  if (!SUPABASE_CONFIGURED){
+    app.appendChild(renderSetupNeeded());
+    return;
+  }
+  if (!lastRoom){
+    app.appendChild(renderLanding());
+    return;
+  }
+  var room = lastRoom;
+  checkBidSound(room.status === "auction" ? room : null);
+  if (room.status === "lobby"){ app.appendChild(renderLobby(room)); }
+  else if (room.status === "finished"){ app.appendChild(renderFinished(room)); }
+  else { app.appendChild(renderAuction(room)); }
+
+  if (room.status === "sold" && Date.now() < soldBannerUntil){
+    app.appendChild(renderSoldOverlay(room));
+  }
+}
+
+function renderSetupNeeded(){
+  return el(
+    '<div class="landing-wrap">'+
+      '<div style="display:flex;flex-direction:column;align-items:center;text-align:center;">'+
+        '<div class="eyebrow">Setup Needed</div>'+
+        '<div class="h1">CONNECT<br><span class="accent">SUPABASE</span></div>'+
+      '</div>'+
+      '<div class="panel stack">'+
+        '<div class="sub" style="margin:0;text-align:left;">This game needs a Supabase project to sync players between browsers. In the HTML file, near the top of the &lt;script&gt; block, replace:</div>'+
+        '<div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:12px;font-family:var(--font-mono);font-size:12px;color:var(--gold-bright);white-space:pre-wrap;text-align:left;">SUPABASE_URL = "YOUR_SUPABASE_URL"\nSUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY"</div>'+
+        '<div class="sub" style="margin:0;text-align:left;">with your project\u2019s Project URL and anon public key from Supabase \u2192 Settings \u2192 API, then re-save and re-deploy the file.</div>'+
+      '</div>'+
+    '</div>'
+  );
+}
+
+// ---------------- LANDING ----------------
+function renderLanding(){
+  var wrap = el('<div class="landing-wrap"></div>');
+  var head = el(
+    '<div style="display:flex;flex-direction:column;align-items:center;text-align:center;">'+
+    '<div class="eyebrow">Transfer Deadline Day</div>'+
+    '<div class="h1">5-A-SIDE<br><span class="accent">AUCTION DRAFT</span></div>'+
+    '<div class="sub">Build a five-player squad from Premier League current stars and legends. $50,000 budget. Nobody knows who\u2019s coming up next.</div>'+
+    '</div>'
+  );
+  wrap.appendChild(head);
+
+  var toggle = el(
+    '<div class="mode-toggle">'+
+      '<button id="mode-create" class="'+(landingMode==="create"?"active":"")+'">Create Room</button>'+
+      '<button id="mode-join" class="'+(landingMode==="join"?"active":"")+'">Join Room</button>'+
+    '</div>'
+  );
+  wrap.appendChild(toggle);
+  toggle.querySelector("#mode-create").onclick = function(){ landingMode="create"; joinError=""; render(); };
+  toggle.querySelector("#mode-join").onclick = function(){ landingMode="join"; joinError=""; render(); };
+
+  var panel = el('<div class="panel stack" style="width:100%;"></div>');
+  var nameInput = el('<input type="text" id="name-input" placeholder="Your name" maxlength="18">');
+  panel.appendChild(nameInput);
+
+  if (landingMode === "join"){
+    var codeInput = el('<input type="text" id="code-input" placeholder="Room code (e.g. AB3F9)" maxlength="6" style="text-transform:uppercase;letter-spacing:3px;">');
+    panel.appendChild(codeInput);
+  }
+
+  var errBox = el('<div class="error-text"></div>');
+  errBox.textContent = joinError;
+  panel.appendChild(errBox);
+
+  var actionBtn = el('<button class="btn-primary btn-full">'+(landingMode==="create"?"Create Room":"Join Room")+'</button>');
+  panel.appendChild(actionBtn);
+  actionBtn.onclick = function(){
+    ensureAudio();
+    var nm = (panel.querySelector("#name-input").value || "").trim();
+    if (!nm){ joinError = "Enter your name first."; render(); return; }
+    myName = nm;
+    if (landingMode === "create"){
+      doCreateRoom();
+    } else {
+      var codeEl = panel.querySelector("#code-input");
+      var code = (codeEl ? codeEl.value : "").trim().toUpperCase();
+      if (!code){ joinError = "Enter a room code."; render(); return; }
+      doJoinRoom(code);
+    }
+  };
+
+  wrap.appendChild(panel);
+  wrap.appendChild(el('<div class="footnote">Everyone stays on this page \u2014 share the room code with friends so they can join from their own device. Keep the tab open during the auction; the host\u2019s browser runs the clock.</div>'));
+  wrap.appendChild(el('<div class="footnote" style="margin-top:4px;opacity:0.7;">Made by Noufal</div>'));
+  return wrap;
+}
+
+function doCreateRoom(){
+  var code = genCode();
+  var room = {
+    code: code,
+    hostId: myId,
+    status: "lobby",
+    players: {},
+    pool: [],
+    soldIds: [],
+    current: null,
+    soldInfo: null,
+    simulation: null,
+    settings: { league: "PL", includeLegends: true, vsAI: false, aiCount: 1 }
+  };
+  room.players[myId] = { id: myId, name: myName, budget: BUDGET_START, squad: [] };
+  saveRoom(room).then(function(res){
+    if (!res){ joinError = "Couldn't create the room. Try again."; render(); return; }
+    roomCode = code;
+    lastRoom = room;
+    startPolling();
+    render();
+  });
+}
+
+function doJoinRoom(code){
+  loadRoom(code).then(function(room){
+    if (!room){ joinError = "No room found with that code."; render(); return; }
+    if (room.status !== "lobby"){ joinError = "That game has already started."; render(); return; }
+    if (!room.players[myId]){
+      room.players[myId] = { id: myId, name: myName, budget: BUDGET_START, squad: [] };
+    }
+    saveRoom(room).then(function(res){
+      if (!res){ joinError = "Couldn't join. Try again."; render(); return; }
+      roomCode = code;
+      lastRoom = room;
+      startPolling();
+      render();
+    });
+  });
+}
+
+function updateSettings(room, patch){
+  loadRoom(room.code).then(function(fresh){
+    if (!fresh || fresh.hostId !== myId) return;
+    fresh.settings = fresh.settings || { league:"PL", includeLegends:true, vsAI:false, aiCount:1 };
+    for (var k in patch){ fresh.settings[k] = patch[k]; }
+    saveRoom(fresh).then(function(){ lastRoom = fresh; render(); });
+  });
+}
+
+// ---------------- LOBBY ----------------
+function renderLobby(room){
+  var s = room.settings || { league:"PL", includeLegends:true, vsAI:false, aiCount:1 };
+  var wrap = el('<div class="landing-wrap" style="max-width:480px;"></div>');
+  wrap.appendChild(el(
+    '<div style="display:flex;flex-direction:column;align-items:center;text-align:center;">'+
+    '<div class="eyebrow">Room Lobby</div>'+
+    '<div class="h1">WAITING<br><span class="accent">ROOM</span></div>'+
+    '</div>'
+  ));
+  var codeBox = el('<div class="room-code-display"></div>');
+  codeBox.textContent = room.code;
+  wrap.appendChild(codeBox);
+  wrap.appendChild(el('<div class="sub">Share this code. Each player joins from their own device with their own name.</div>'));
+
+  var rosterPanel = el('<div class="panel stack" style="width:100%;"></div>');
+  rosterPanel.appendChild(el('<div class="sidebar-title">Players in room ('+Object.keys(room.players).length+')</div>'));
+  var roster = el('<div class="roster"></div>');
+  Object.keys(room.players).forEach(function(id){
+    var p = room.players[id];
+    var row = el('<div class="roster-row"><span>'+escapeHtml(p.name)+(id===room.hostId?" \u2b50":"")+(id===myId?" (you)":"")+(p.isAI?" \ud83e\udd16":"")+'</span><span class="tag">'+fmt(p.budget)+'</span></div>');
+    roster.appendChild(row);
+  });
+  rosterPanel.appendChild(roster);
+  wrap.appendChild(rosterPanel);
+
+  var isHost = room.hostId === myId;
+  var settingsPanel = el('<div class="panel settings-panel"></div>');
+  settingsPanel.appendChild(el('<div class="sidebar-title">Game Settings</div>'));
+
+  var leagueRow = el('<div class="settings-row"><div><div class="settings-label">League</div><div class="settings-sub">'+escapeHtml(LEAGUES[s.league].note)+'</div></div></div>');
+  var leagueSeg = el('<div class="seg-group"></div>');
+  ["PL","ISL","LALIGA","SERIEA"].forEach(function(lg){
+    var b = el('<button class="seg-btn'+(s.league===lg?" on":"")+'">'+lg+'</button>');
+    b.disabled = !isHost;
+    if (isHost){ b.onclick = function(l){ return function(){ updateSettings(room, {league:l}); }; }(lg); }
+    leagueSeg.appendChild(b);
+  });
+  leagueRow.appendChild(leagueSeg);
+  settingsPanel.appendChild(leagueRow);
+
+  if (LEAGUES[s.league].legendsOnly){
+    settingsPanel.appendChild(el('<div class="settings-row"><div class="settings-sub">This league is legends-only \u2014 no current-player toggle needed.</div></div>'));
+  } else {
+    var legendRow = el('<div class="settings-row"><div><div class="settings-label">Include legends</div><div class="settings-sub">Turn off for current players only.</div></div></div>');
+    var legendBtn = el('<button class="toggle-btn'+(s.includeLegends?" on":"")+'">'+(s.includeLegends?"On":"Off")+'</button>');
+    legendBtn.disabled = !isHost;
+    if (isHost){ legendBtn.onclick = function(){ updateSettings(room, {includeLegends: !s.includeLegends}); }; }
+    legendRow.appendChild(legendBtn);
+    settingsPanel.appendChild(legendRow);
+  }
+
+  var aiRow = el('<div class="settings-row"><div><div class="settings-label">Play vs AI</div><div class="settings-sub">Add computer-controlled bidders.</div></div></div>');
+  var aiBtn = el('<button class="toggle-btn'+(s.vsAI?" on":"")+'">'+(s.vsAI?"On":"Off")+'</button>');
+  aiBtn.disabled = !isHost;
+  if (isHost){ aiBtn.onclick = function(){ updateSettings(room, {vsAI: !s.vsAI}); }; }
+  aiRow.appendChild(aiBtn);
+  settingsPanel.appendChild(aiRow);
+
+  if (s.vsAI){
+    var stepRow = el('<div class="settings-row"><div class="settings-label">AI opponents</div></div>');
+    var stepper = el('<div class="stepper"></div>');
+    var minus = el('<button class="btn-ghost">\u2212</button>');
+    var countSpan = el('<span class="count">'+s.aiCount+'</span>');
+    var plus = el('<button class="btn-ghost">+</button>');
+    minus.disabled = !isHost || s.aiCount<=1;
+    plus.disabled = !isHost || s.aiCount>=AI_NAMES.length;
+    if (isHost){
+      minus.onclick = function(){ updateSettings(room, {aiCount: Math.max(1, s.aiCount-1)}); };
+      plus.onclick = function(){ updateSettings(room, {aiCount: Math.min(AI_NAMES.length, s.aiCount+1)}); };
+    }
+    stepper.appendChild(minus); stepper.appendChild(countSpan); stepper.appendChild(plus);
+    stepRow.appendChild(stepper);
+    settingsPanel.appendChild(stepRow);
+  }
+
+  if (!isHost){
+    settingsPanel.appendChild(el('<div class="sub" style="margin:0;">Only the host can change these.</div>'));
+  }
+  wrap.appendChild(settingsPanel);
+
+  if (isHost){
+    var humanCount = Object.keys(room.players).length;
+    var effectiveCount = humanCount + (s.vsAI ? s.aiCount : 0);
+    var canStart = s.vsAI ? humanCount >= 1 : humanCount >= 2;
+    var startBtn = el('<button class="btn-primary btn-full">'+(canStart?("Start Auction ("+effectiveCount+" teams)"):"Need at least 2 players")+'</button>');
+    startBtn.disabled = !canStart;
+    startBtn.onclick = function(){ doStartAuction(room); };
+    wrap.appendChild(startBtn);
+  } else {
+    wrap.appendChild(el('<div class="sub">Waiting for the host to start the auction\u2026</div>'));
+  }
+
+  var leaveBtn = el('<button class="btn-ghost btn-full">Leave room</button>');
+  leaveBtn.onclick = leaveRoom;
+  wrap.appendChild(leaveBtn);
+
+  return wrap;
+}
+
+function doStartAuction(room){
+  var s = room.settings || { league:"PL", includeLegends:true, vsAI:false, aiCount:1 };
+  if (s.vsAI){
+    for (var i=0;i<s.aiCount;i++){
+      var aiId = "ai-"+i;
+      if (!room.players[aiId]){
+        room.players[aiId] = { id: aiId, name: AI_NAMES[i] || ("CPU "+(i+1)), budget: BUDGET_START, squad: [], isAI: true };
+      }
+    }
+  }
+  var pool = PLAYERS.filter(function(p){
+    if (p.league !== s.league) return false;
+    if (!s.includeLegends && p.tier === "Legend") return false;
+    return true;
+  });
+  room.status = "auction";
+  room.pool = shuffle(pool.map(function(p){ return p.id; }));
+  room.soldIds = [];
+  room.current = null;
+  room.soldInfo = null;
+  saveRoom(room).then(function(){
+    advanceToNextPlayer(room);
+  });
+}
+
+// ---------------- AUCTION ----------------
+function anyoneSquadComplete(room){
+  return Object.keys(room.players).some(function(id){ return squadCount(room.players[id]) >= SQUAD_SIZE; });
+}
+function advanceToNextPlayer(room){
+  if (isRoomFull(room)){
+    room.status = "finished";
+    room.current = null;
+    saveRoom(room);
+    return;
+  }
+  var remaining = room.pool.filter(function(id){ return room.soldIds.indexOf(id) === -1; });
+  if (remaining.length === 0){
+    room.status = "finished";
+    room.current = null;
+    saveRoom(room);
+    return;
+  }
+  var pid = null;
+  if (anyoneNeedsGKNow(room)){
+    pid = remaining.find(function(id){ return PLAYERS_BY_ID[id].pos === "GK"; }) || null;
+  }
+  if (!pid && anyoneSquadComplete(room)){
+    // Once someone's squad is done, there's no competition left to keep prices honest \u2014
+    // so from here on, surface weaker/filler players instead of letting whoever's still
+    // bidding scoop up the remaining stars uncontested.
+    var sorted = remaining.slice().sort(function(x,y){ return (PLAYERS_BY_ID[x].ovr||0) - (PLAYERS_BY_ID[y].ovr||0); });
+    pid = sorted[0] || null;
+  }
+  if (!pid) pid = remaining[0];
+  room.status = "auction";
+  room.soldInfo = null;
+  room.current = {
+    playerId: pid,
+    endTime: Date.now() + AUCTION_SECONDS*1000,
+    bid: { amount: 0, bidderId: null, bidderName: null },
+    passed: []
+  };
+  saveRoom(room);
+}
+
+function resolveCurrentAuction(room){
+  var cur = room.current;
+  if (!cur) return;
+  var playerDef = PLAYERS_BY_ID[cur.playerId];
+  room.soldIds.push(cur.playerId);
+  if (cur.bid.bidderId && room.players[cur.bid.bidderId]){
+    var buyer = room.players[cur.bid.bidderId];
+    buyer.budget -= cur.bid.amount;
+    buyer.squad.push({ id: playerDef.id, name: playerDef.name, pos: playerDef.pos, club: playerDef.club, tier: playerDef.tier, price: cur.bid.amount, ovr: playerDef.ovr });
+    room.soldInfo = { playerId: playerDef.id, sold: true, winnerName: buyer.name, amount: cur.bid.amount };
+  } else {
+    room.soldInfo = { playerId: playerDef.id, sold: false };
+  }
+  room.status = "sold";
+  room.current = null;
+  saveRoom(room);
+}
+
+var lastStickerPlayerId = null;
+
+function renderAuction(room){
+  var wrap = el('<div style="display:flex;flex-direction:column;align-items:center;width:100%;"></div>');
+
+  var top = el('<div class="topbar"></div>');
+  top.appendChild(el('<div class="pill">Room <b>'+room.code+'</b></div>'));
+  var soldCount = room.soldIds.length;
+  var poolTotal = room.pool ? room.pool.length : PLAYERS.length;
+  top.appendChild(el('<div class="pill">Player <b>'+Math.min(soldCount+1, poolTotal)+'</b> / '+poolTotal+'</div>'));
+  var leaveTop = el('<button class="btn-ghost">Leave</button>');
+  leaveTop.onclick = leaveRoom;
+  top.appendChild(leaveTop);
+  wrap.appendChild(top);
+
+  var layout = el('<div class="auction-layout"></div>');
+
+  // left sidebar: standings
+  var left = el('<div class="panel"></div>');
+  left.appendChild(el('<div class="sidebar-title">Squads</div>'));
+  var sortedIds = Object.keys(room.players).sort(function(a,b){
+    return room.players[b].budget - room.players[a].budget;
+  });
+  sortedIds.forEach(function(id){
+    var p = room.players[id];
+    var card = el('<div class="team-card'+(id===myId?" me":"")+'"></div>');
+    card.appendChild(el('<div class="team-card-head"><span class="team-card-name">'+escapeHtml(p.name)+(id===room.hostId?" \u2b50":"")+(p.isAI?" \ud83e\udd16":"")+'</span><span class="team-card-budget">'+fmt(p.budget)+'</span></div>'));
+    var slots = el('<div class="team-slots"></div>');
+    for (var i=0;i<SQUAD_SIZE;i++){
+      if (p.squad[i]){
+        var s = el('<span class="slot filled" title="'+escapeHtml(p.squad[i].name)+'">'+escapeHtml(p.squad[i].pos)+'</span>');
+        slots.appendChild(s);
+      } else {
+        slots.appendChild(el('<span class="slot">\u2014</span>'));
+      }
+    }
+    card.appendChild(slots);
+    left.appendChild(card);
+  });
+  layout.appendChild(left);
+
+  // center: sticker + timer + bid box
+  var center = el('<div class="sticker-stage"></div>');
+  if (room.current){
+    var pdef = PLAYERS_BY_ID[room.current.playerId];
+    var isNewCard = lastStickerPlayerId !== pdef.id;
+    lastStickerPlayerId = pdef.id;
+    var sticker = el(
+      '<div class="sticker'+(pdef.tier==="Legend"?" legend":"")+(isNewCard?" sticker-flip":"")+'">'+
+        '<div class="sticker-top">'+
+          '<div class="sticker-ovr"><span class="num">'+pdef.ovr+'</span><span class="pos">'+pdef.pos+'</span></div>'+
+          '<div class="sticker-tier">'+pdef.tier+'</div>'+
+        '</div>'+
+        '<div class="sticker-league">'+escapeHtml(LEAGUES[pdef.league].label)+'</div>'+
+        '<div class="sticker-initials">'+initials(pdef.name)+'</div>'+
+        '<div class="sticker-name">'+escapeHtml(pdef.name)+'</div>'+
+        '<div class="sticker-club">'+escapeHtml(pdef.club)+'</div>'+
+        '<div class="sticker-stats">'+
+          '<div class="sticker-stat-row"><span>PAC</span><span class="val">'+pdef.pac+'</span></div>'+
+          '<div class="sticker-stat-row"><span>SHO</span><span class="val">'+pdef.sho+'</span></div>'+
+          '<div class="sticker-stat-row"><span>PAS</span><span class="val">'+pdef.pas+'</span></div>'+
+          '<div class="sticker-stat-row"><span>DRI</span><span class="val">'+pdef.dri+'</span></div>'+
+          '<div class="sticker-stat-row"><span>DEF</span><span class="val">'+pdef.def+'</span></div>'+
+          '<div class="sticker-stat-row"><span>PHY</span><span class="val">'+pdef.phy+'</span></div>'+
+        '</div>'+
+      '</div>'
+    );
+    center.appendChild(sticker);
+
+    var secsLeft = Math.max(0, Math.ceil((room.current.endTime - Date.now())/1000));
+    var timerEl = el('<div class="timer'+(secsLeft<=5?" urgent":"")+'">'+secsLeft+'s</div>');
+    center.appendChild(timerEl);
+
+    var bidBox = el('<div class="current-bid-box"></div>');
+    if (room.current.bid.bidderId){
+      bidBox.appendChild(el('<div class="current-bid-amount">'+fmt(room.current.bid.amount)+'</div>'));
+      bidBox.appendChild(el('<div class="current-bid-by">Top bid: '+escapeHtml(room.current.bid.bidderName)+'</div>'));
+    } else {
+      bidBox.appendChild(el('<div class="current-bid-amount">\u2014</div>'));
+      bidBox.appendChild(el('<div class="current-bid-by">No bids yet \u00b7 opens at '+fmt(1000)+'</div>'));
+    }
+    center.appendChild(bidBox);
+
+    var me = room.players[myId];
+    var full = squadCount(me) >= SQUAD_SIZE;
+    var already = room.current.bid.bidderId === myId;
+    var gkLocked = needsGKNow(me) && pdef.pos !== "GK";
+    var iPassed = (room.current.passed || []).indexOf(myId) !== -1;
+    var maxBid = maxAllowedBid(me);
+    var minNext = Math.max(1000, room.current.bid.amount + 1000);
+
+    var controls = el('<div class="bid-controls"></div>');
+    if (full){
+      controls.appendChild(el('<div class="sub" style="margin:0;">Your squad is complete \u2014 spectating.</div>'));
+    } else if (gkLocked){
+      controls.appendChild(el('<div class="gk-note">Your last slot must be a goalkeeper. Sit tight for one \u2014 you can\u2019t bid on outfield players now.</div>'));
+    } else if (already){
+      controls.appendChild(el('<div class="sub" style="margin:0;color:var(--gold-bright);font-weight:800;">You\u2019re the top bidder.</div>'));
+    } else if (iPassed){
+      controls.appendChild(el('<div class="sub" style="margin:0;">You passed on this player.</div>'));
+    } else {
+      var row1 = el('<div class="bid-row"></div>');
+      [1000,5000,10000].forEach(function(inc){
+        var b = el('<button class="btn-ghost">+'+fmt(inc)+'</button>');
+        var target = room.current.bid.amount>0 ? room.current.bid.amount+inc : Math.max(1000, inc);
+        b.disabled = target > maxBid;
+        b.onclick = function(t){ return function(){ placeBid(room, t); }; }(target);
+        row1.appendChild(b);
+      });
+      controls.appendChild(row1);
+
+      var custom = el('<div class="bid-custom"><input type="number" id="custom-bid" placeholder="Custom $"><button class="btn-primary">Bid</button></div>');
+      var customBtn = custom.querySelector("button");
+      var customInput = custom.querySelector("input");
+      customInput.min = minNext;
+      customInput.step = 500;
+      customBtn.onclick = function(){
+        var v = parseInt(customInput.value, 10);
+        if (!v || isNaN(v)) return;
+        placeBid(room, v);
+      };
+      controls.appendChild(custom);
+
+      var passBtn = el('<button class="btn-pass btn-full">Pass \u2014 I don\u2019t want this player</button>');
+      passBtn.onclick = function(){ placePass(room); };
+      controls.appendChild(passBtn);
+
+      controls.appendChild(el('<div class="sub" style="margin:0;font-size:12px;">Max you can bid: '+fmt(maxBid)+' (keeps enough for remaining slots)</div>'));
+    }
+    center.appendChild(controls);
+  }
+  layout.appendChild(center);
+
+  // right sidebar: your squad detail
+  var right = el('<div class="panel"></div>');
+  var mePlayer = room.players[myId];
+  right.appendChild(el('<div class="sidebar-title">Your squad \u00b7 '+fmt(mePlayer.budget)+' left</div>'));
+  if (mePlayer.squad.length === 0){
+    right.appendChild(el('<div class="sub" style="margin:0;text-align:left;">No players yet.</div>'));
+  }
+  mePlayer.squad.forEach(function(sp){
+    right.appendChild(el('<div class="final-player-row"><span>'+escapeHtml(sp.name)+' <span class="crown">'+sp.pos+'</span></span><span>'+fmt(sp.price)+'</span></div>'));
+  });
+  layout.appendChild(right);
+
+  wrap.appendChild(layout);
+  return wrap;
+}
+
+function placeBid(room, amount){
+  loadRoom(room.code).then(function(fresh){
+    if (!fresh || !fresh.current || fresh.status !== "auction") return;
+    var me = fresh.players[myId];
+    var pdef = PLAYERS_BY_ID[fresh.current.playerId];
+    if (!canBidOn(me, pdef)) return;
+    if (amount <= fresh.current.bid.amount) return;
+    if (amount > maxAllowedBid(me)) return;
+    fresh.current.bid = { amount: amount, bidderId: myId, bidderName: me.name };
+    fresh.current.passed = []; // a new leading bid reopens the floor
+    fresh.current.endTime = fresh.current.endTime + BID_TIME_EXTENSION_MS;
+    saveRoom(fresh).then(function(){
+      lastRoom = fresh;
+      render();
+    });
+  });
+}
+
+function placePass(room){
+  loadRoom(room.code).then(function(fresh){
+    if (!fresh || !fresh.current || fresh.status !== "auction") return;
+    fresh.current.passed = fresh.current.passed || [];
+    if (fresh.current.passed.indexOf(myId) === -1){ fresh.current.passed.push(myId); }
+    maybeForceEarlyResolve(fresh);
+    saveRoom(fresh).then(function(){
+      lastRoom = fresh;
+      render();
+    });
+  });
+}
+
+// If everyone who could still bid has passed, end the clock immediately so
+// the auction wraps up fast instead of waiting out the full countdown.
+function maybeForceEarlyResolve(room){
+  var cur = room.current;
+  if (!cur) return;
+  var pdef = PLAYERS_BY_ID[cur.playerId];
+  var eligible = eligibleBidderIds(room, pdef);
+  var passed = cur.passed || [];
+  var stillIn = eligible.filter(function(id){
+    return id !== cur.bid.bidderId && passed.indexOf(id) === -1;
+  });
+  if (stillIn.length === 0){
+    cur.endTime = Date.now();
+  }
+}
+
+function renderSoldOverlay(room){
+  var info = room.soldInfo;
+  var pdef = info ? PLAYERS_BY_ID[info.playerId] : null;
+  var overlay = el('<div class="sold-overlay"></div>');
+  if (info && info.sold){
+    overlay.appendChild(el('<div class="sold-stamp">SOLD</div>'));
+    overlay.appendChild(el('<div class="sold-detail">'+escapeHtml(pdef.name)+' to <b>'+escapeHtml(info.winnerName)+'</b> for <b>'+fmt(info.amount)+'</b></div>'));
+  } else if (info){
+    overlay.appendChild(el('<div class="sold-stamp sold-unsold">UNSOLD</div>'));
+    overlay.appendChild(el('<div class="sold-detail">No bids for '+escapeHtml(pdef.name)+'</div>'));
+  }
+  return overlay;
+}
+
+// ---------------- FINISHED ----------------
+function renderFinished(room){
+  var wrap = el('<div style="display:flex;flex-direction:column;align-items:center;width:100%;"></div>');
+  wrap.appendChild(el(
+    '<div style="display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:22px;">'+
+    '<div class="eyebrow">Full Time</div>'+
+    '<div class="h1">FINAL<br><span class="accent">SQUADS</span></div>'+
+    '</div>'
+  ));
+
+  var grid = el('<div class="finished-grid"></div>');
+  var ids = Object.keys(room.players).sort(function(a,b){
+    var spentA = BUDGET_START - room.players[a].budget;
+    var spentB = BUDGET_START - room.players[b].budget;
+    return spentB - spentA;
+  });
+  ids.forEach(function(id){
+    var p = room.players[id];
+    var card = el('<div class="panel"></div>');
+    card.appendChild(el('<div class="final-squad-title"><span class="team-card-name" style="font-size:18px;">'+escapeHtml(p.name)+(id===myId?" (you)":"")+'</span><span class="team-card-budget">'+fmt(p.budget)+' left</span></div>'));
+    if (p.squad.length === 0){
+      card.appendChild(el('<div class="sub" style="margin:8px 0 0;text-align:left;">No players won.</div>'));
+    }
+    p.squad.forEach(function(sp){
+      card.appendChild(el('<div class="final-player-row"><span>'+escapeHtml(sp.name)+' <span class="crown">'+sp.pos+' \u00b7 '+sp.tier+'</span></span><span>'+fmt(sp.price)+'</span></div>'));
+    });
+    grid.appendChild(card);
+  });
+  wrap.appendChild(grid);
+
+  wrap.appendChild(renderSimSection(room));
+
+  var leaveBtn = el('<button class="btn-primary" style="margin-top:22px;">Back to start</button>');
+  leaveBtn.onclick = leaveRoom;
+  wrap.appendChild(leaveBtn);
+
+  return wrap;
+}
+
+// ---------------- AI match simulation ----------------
+function renderSimSection(room){
+  var wrap = el('<div class="sim-panel"></div>');
+  wrap.appendChild(el(
+    '<div class="sim-divider"><span class="eyebrow" style="white-space:nowrap;">Claude AI Match Center</span></div>'
+  ));
+
+  var sim = room.simulation;
+  var panel = el('<div class="panel"></div>');
+
+  if (!sim || sim.status === "error"){
+    var cta = el('<div class="sim-cta"></div>');
+    cta.appendChild(el('<div class="h1" style="font-size:26px;">SIMULATE<br><span class="accent">THE FINAL</span></div>'));
+    cta.appendChild(el('<div class="sub" style="margin:0;">Claude will analyze every squad, simulate a knockout bracket with live commentary, and crown a champion \u2014 all in about 20 seconds.</div>'));
+    if (sim && sim.status === "error"){
+      cta.appendChild(el('<div class="error-text">Something went wrong running the simulation.</div>'));
+    }
+    if (room.hostId === myId){
+      var btn = el('<button class="btn-claret">Run AI Match Simulation</button>');
+      btn.onclick = function(){ runSimulation(); };
+      cta.appendChild(btn);
+    } else {
+      cta.appendChild(el('<div class="sub" style="margin:0;">Waiting for the host to start it\u2026</div>'));
+    }
+    panel.appendChild(cta);
+  } else if (sim.status === "loading"){
+    var loading = el('<div class="sim-cta"></div>');
+    loading.appendChild(el('<div class="spinner"></div>'));
+    loading.appendChild(el('<div class="sub" style="margin:0;">Claude is analyzing every squad and simulating the bracket\u2026</div>'));
+    panel.appendChild(loading);
+  } else if (sim.status === "running"){
+    panel.appendChild(renderSimPlayback(room, sim, false));
+  } else if (sim.status === "done"){
+    panel.appendChild(renderSimPlayback(room, sim, true));
+  }
+
+  wrap.appendChild(panel);
+  return wrap;
+}
+
+function renderLiveScoreboard(result, pct){
+  var flat = [];
+  result.rounds.forEach(function(round){
+    round.matches.forEach(function(m){ if (!m.bye) flat.push(m); });
+  });
+  var target = null;
+  for (var i=0;i<flat.length;i++){
+    if (pct < flat[i].revealPct){ target = flat[i]; break; }
+  }
+  if (!target){
+    return el('<div class="live-scoreboard"><div class="lbl">Full Time</div><div class="row"><span class="team">All matches complete</span></div></div>');
+  }
+  var isLive = pct >= (target.firstEventPct === undefined ? 101 : target.firstEventPct);
+  if (!isLive){
+    return el(
+      '<div class="live-scoreboard"><div class="lbl">Up Next</div><div class="row">'+
+      '<span class="team">'+escapeHtml(target.teamAName)+'</span><span class="score">vs</span><span class="team b">'+escapeHtml(target.teamBName)+'</span>'+
+      '</div></div>'
+    );
+  }
+  var liveA = target.events.filter(function(e){ return e.team === "A" && e.pct <= pct; }).length;
+  var liveB = target.events.filter(function(e){ return e.team === "B" && e.pct <= pct; }).length;
+  return el(
+    '<div class="live-scoreboard is-live"><div class="lbl">\u25cf Live</div><div class="row">'+
+    '<span class="team">'+escapeHtml(target.teamAName)+'</span><span class="score">'+liveA+' \u2013 '+liveB+'</span><span class="team b">'+escapeHtml(target.teamBName)+'</span>'+
+    '</div></div>'
+  );
+}
+
+function renderSimPlayback(room, sim, finished){
+  var wrap = el('<div></div>');
+  var elapsed = finished ? sim.duration : (Date.now() - sim.startTime);
+  var pct = Math.max(0, Math.min(100, (elapsed / sim.duration) * 100));
+  var secsLeft = Math.max(0, Math.ceil((sim.duration - elapsed) / 1000));
+
+  if (!finished){
+    var progress = el('<div class="sim-progress-track"><div class="sim-progress-bar" style="width:'+pct+'%;"></div></div>');
+    wrap.appendChild(progress);
+    wrap.appendChild(el('<div class="sim-clock">Simulating\u2026 '+secsLeft+'s remaining</div>'));
+    wrap.appendChild(renderLiveScoreboard(sim.result, pct));
+  }
+
+  var result = sim.result;
+
+  // bracket
+  var bracket = el('<div class="bracket"></div>');
+  result.rounds.forEach(function(round){
+    var rd = el('<div></div>');
+    rd.appendChild(el('<div class="bracket-round-title">'+escapeHtml(round.name)+'</div>'));
+    round.matches.forEach(function(m){
+      var row;
+      if (m.bye){
+        row = el('<div class="bracket-match"><span class="teams">'+escapeHtml(m.teamAName)+'</span><span class="tag tag-upcoming">Bye</span></div>');
+      } else {
+        var revealed = finished || pct >= m.revealPct;
+        var live = !revealed && pct >= (m.firstEventPct === undefined ? 101 : m.firstEventPct);
+        if (revealed){
+          row = el(
+            '<div class="bracket-match"><span class="teams">'+
+            '<span class="'+(m.winnerName===m.teamAName?"winner-name":"")+'">'+escapeHtml(m.teamAName)+'</span>'+
+            ' <span class="score">'+m.scoreA+' \u2013 '+m.scoreB+'</span> '+
+            '<span class="'+(m.winnerName===m.teamBName?"winner-name":"")+'">'+escapeHtml(m.teamBName)+'</span>'+
+            '</span><span class="tag tag-ft">FT</span></div>'
+          );
+        } else if (live){
+          row = el('<div class="bracket-match"><span class="teams">'+escapeHtml(m.teamAName)+' vs '+escapeHtml(m.teamBName)+'</span><span class="tag tag-live">Live</span></div>');
+        } else {
+          row = el('<div class="bracket-match"><span class="teams">'+escapeHtml(m.teamAName)+' vs '+escapeHtml(m.teamBName)+'</span><span class="tag tag-upcoming">Upcoming</span></div>');
+        }
+      }
+      rd.appendChild(row);
+    });
+    bracket.appendChild(rd);
+  });
+  wrap.appendChild(bracket);
+
+  // ticker
+  var visibleEvents = result.ticker.filter(function(e){ return finished || e.pct <= pct; });
+  var lastN = visibleEvents.slice(-10);
+  var ticker = el('<div class="sim-ticker"></div>');
+  lastN.forEach(function(e){
+    var isFt = e.text.indexOf("full-time") !== -1;
+    ticker.appendChild(el('<div class="sim-ticker-item'+(isFt?" ft":"")+'">'+escapeHtml(e.text)+'</div>'));
+  });
+  wrap.appendChild(ticker);
+
+  if (finished){
+    var champAnalytics = null;
+    result.analytics.forEach(function(a){ if (a.team === result.champion) champAnalytics = a; });
+    wrap.appendChild(el(
+      '<div class="champion-banner"><span class="trophy">\ud83c\udfc6</span>'+
+      '<div class="name">'+escapeHtml(result.champion)+'</div>'+
+      '<div class="reason">'+escapeHtml(champAnalytics ? (champAnalytics.mvp+" led the line for a "+champAnalytics.rating+"-rated squad. "+champAnalytics.strength) : "Crowned champion of the AI-simulated final.")+'</div></div>'
+    ));
+
+    var agrid = el('<div class="analytics-grid"></div>');
+    result.analytics.forEach(function(a){
+      var card = el('<div class="analytics-card'+(a.team===result.champion?" champion":"")+'"></div>');
+      card.appendChild(el(
+        '<div class="analytics-head"><span class="analytics-name">'+escapeHtml(a.team)+(a.team===result.champion?" \ud83c\udfc6":"")+'</span><span class="analytics-rating">'+a.rating+'</span></div>'
+      ));
+      card.appendChild(el('<div class="analytics-line"><b>MVP:</b> '+escapeHtml(a.mvp)+'</div>'));
+      card.appendChild(el('<div class="analytics-line"><b>Strength:</b> '+escapeHtml(a.strength)+'</div>'));
+      card.appendChild(el('<div class="analytics-line"><b>Weakness:</b> '+escapeHtml(a.weakness)+'</div>'));
+      card.appendChild(el('<div class="analytics-line"><b>Value:</b> '+escapeHtml(a.valueForMoney)+'</div>'));
+      agrid.appendChild(card);
+    });
+    wrap.appendChild(agrid);
+
+    if (result.usedFallback){
+      wrap.appendChild(el('<div class="sim-note">Part of this simulation was generated locally (AI analysis was briefly unavailable).</div>'));
+    } else {
+      wrap.appendChild(el('<div class="sim-note">Simulated and analyzed by Claude \u2014 for fun, not a real prediction.</div>'));
+    }
+  }
+
+  return wrap;
+}
+
+async function runSimulation(){
+  var room = await loadRoom(roomCode);
+  if (!room || room.hostId !== myId) return;
+  room.simulation = { status: "loading" };
+  await saveRoom(room);
+  lastRoom = room;
+  render();
+
+  try{
+    var teamIds = Object.keys(room.players);
+    var teams = teamIds.map(function(id){ return room.players[id]; });
+    if (teams.length < 2) throw new Error("not enough teams");
+
+    var order = shuffle(teams.map(function(_, i){ return i; }));
+    var roundsOutput = [];
+    var allEventObjs = [];
+    var usedFallbackAny = false;
+
+    while (order.length > 1){
+      var roundName = nameForRound(order.length);
+      var pairs = [];
+      for (var i=0; i<order.length; i+=2){
+        if (i+1 < order.length){ pairs.push({ aIdx: order[i], bIdx: order[i+1] }); }
+        else { pairs.push({ aIdx: order[i], bye: true }); }
+      }
+      var realPairs = pairs.filter(function(p){ return !p.bye; });
+      var roundRes = realPairs.length ? await simulateRoundWithClaude(realPairs, teams) : { results: [], fallback: false };
+      if (roundRes.fallback) usedFallbackAny = true;
+
+      var matchOutputs = [];
+      var winners = [];
+      var ri = 0;
+      pairs.forEach(function(p){
+        if (p.bye){
+          var byeObj = { teamAName: teams[p.aIdx].name, bye: true, revealPct: 0 };
+          matchOutputs.push(byeObj);
+          winners.push(p.aIdx);
+        } else {
+          var r = roundRes.results[ri++];
+          if (r.scoreA === r.scoreB){
+            var pa = teamPower(teams[p.aIdx]), pb = teamPower(teams[p.bIdx]);
+            var aWins = Math.random() < (pa/(pa+pb));
+            r.winner = aWins ? "A" : "B";
+            r.events.push({ team: null, text: "Level after full time \u2014 it goes to penalties." });
+            r.events.push({ team: null, text: (aWins ? teams[p.aIdx].name : teams[p.bIdx].name) + " hold their nerve to win the shootout!" });
+          }
+          var winnerIdx = r.winner === "B" ? p.bIdx : p.aIdx;
+          var matchObj = {
+            teamAName: teams[p.aIdx].name,
+            teamBName: teams[p.bIdx].name,
+            scoreA: r.scoreA,
+            scoreB: r.scoreB,
+            winnerName: teams[winnerIdx].name,
+            events: []
+          };
+          matchOutputs.push(matchObj);
+          r.events.forEach(function(ev){
+            var evObj = { team: ev.team, text: roundName+": "+ev.text };
+            matchObj.events.push(evObj);
+            allEventObjs.push({ evObj: evObj, ref: matchObj, kind: "event" });
+          });
+          allEventObjs.push({
+            text: roundName+" full-time: "+teams[p.aIdx].name+" "+r.scoreA+" \u2013 "+r.scoreB+" "+teams[p.bIdx].name,
+            ref: matchObj, kind: "ft"
+          });
+          winners.push(winnerIdx);
+        }
+      });
+      roundsOutput.push({ name: roundName, matches: matchOutputs });
+      order = winners;
+    }
+
+    var championName = teams[order[0]].name;
+    var analyticsRes = await getAnalyticsWithClaude(teams);
+    if (analyticsRes.fallback) usedFallbackAny = true;
+
+    var total = allEventObjs.length;
+    var ticker = allEventObjs.map(function(o, idx){
+      var pct = total > 1 ? Math.round((idx/(total-1))*100) : 0;
+      if (o.kind === "ft"){
+        o.ref.revealPct = pct;
+        return { pct: pct, text: o.text, team: null };
+      } else {
+        o.evObj.pct = pct;
+        if (o.ref.firstEventPct === undefined) o.ref.firstEventPct = pct;
+        return { pct: pct, text: o.evObj.text, team: o.evObj.team };
+      }
+    });
+    roundsOutput.forEach(function(round){
+      round.matches.forEach(function(m){
+        if (!m.bye && m.revealPct === undefined) m.revealPct = 100;
+      });
+    });
+
+    room.simulation = {
+      status: "running",
+      startTime: Date.now(),
+      duration: SIM_DURATION_MS,
+      result: {
+        rounds: roundsOutput,
+        champion: championName,
+        analytics: analyticsRes.analytics,
+        ticker: ticker,
+        usedFallback: usedFallbackAny
+      }
+    };
+    await saveRoom(room);
+    lastRoom = room;
+    render();
+  } catch(err){
+    console.error("simulation failed", err);
+    room.simulation = { status: "error" };
+    await saveRoom(room);
+    lastRoom = room;
+    render();
+  }
+}
+
+function nameForRound(teamCount){
+  if (teamCount <= 2) return "Final";
+  if (teamCount === 4) return "Semi-Finals";
+  if (teamCount === 8) return "Quarter-Finals";
+  return "Round of " + teamCount;
+}
+
+function teamStrength(team){
+  var squad = team.squad || [];
+  var outfield = squad.filter(function(p){ return p.pos !== "GK"; });
+  var gks = squad.filter(function(p){ return p.pos === "GK"; });
+  var outfieldAvg = outfield.length ? Math.round(outfield.reduce(function(s,p){ return s+(p.ovr||70); },0)/outfield.length) : 60;
+  var gkOvr = gks.length ? Math.round(gks.reduce(function(s,p){ return s+(p.ovr||70); },0)/gks.length) : 55;
+  var avgOvr = squad.length ? Math.round(squad.reduce(function(s,p){ return s+(p.ovr||70); },0)/squad.length) : 60;
+  var depthPenalty = (SQUAD_SIZE - squad.length) * 4; // an incomplete squad is genuinely weaker
+  var score = Math.round(outfieldAvg*0.7 + gkOvr*0.3 - depthPenalty);
+  return { avgOvr:avgOvr, outfieldAvg:outfieldAvg, gkOvr:gkOvr, hasGK: gks.length>0, depth: squad.length, score: score };
+}
+
+function teamDesc(team){
+  var st = teamStrength(team);
+  var list = (team.squad||[]).map(function(p){ return p.pos+": "+p.name+" (OVR "+(p.ovr||"?")+", "+p.tier+")"; }).join(", ");
+  return team.name+" \u2014 squad strength score "+st.score+" (outfield avg OVR "+st.outfieldAvg+", GK OVR "+(st.hasGK?st.gkOvr:"NO GOALKEEPER")+") [" + list + "]";
+}
+
+function clampInt(n, min, max){
+  n = parseInt(n, 10);
+  if (isNaN(n)) n = min;
+  return Math.max(min, Math.min(max, n));
+}
+
+async function callClaude(prompt){
+  var res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: 1000,
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
+  var data = await res.json();
+  var text = (data.content || []).map(function(b){ return b.text || ""; }).join("");
+  var clean = text.replace(/```json|```/g, "").trim();
+  return JSON.parse(clean);
+}
+
+async function simulateRoundWithClaude(pairs, teams){
+  try{
+    var lines = pairs.map(function(p, i){
+      return "Match "+(i+1)+": Team A = "+teamDesc(teams[p.aIdx])+" | Team B = "+teamDesc(teams[p.bIdx]);
+    }).join("\n");
+    var prompt = "You are simulating 5-a-side football matches for a fantasy draft party game, and the result needs to feel like a fair reflection of squad quality, not a coin flip. "+
+      "Each team below lists its computed squad strength score and every player's OVR rating and position \u2014 the goal difference in each match should generally track the gap between the two strength scores (the stronger team should usually win, and win by more when the gap is larger), though a moderate upset is fine occasionally. A team with no listed goalkeeper is significantly weakened defensively. "+
+      "IMPORTANT: goalkeepers must NOT score goals (this is essentially never realistic) \u2014 scorers should be forwards and midfielders, with the occasional defender scoring from a set piece. "+
+      "For EACH match, generate 4-7 short vivid chronological highlight events (max ~12 words each), mentioning specific named players from that match's squads, consistent with their actual position. "+
+      "Tag every event with \"team\":\"A\" or \"team\":\"B\" ONLY when it is a GOAL scored by that side; use \"team\":null for saves, near-misses, cards, or general play. "+
+      "Respond with ONLY strict JSON, no markdown fences, no extra commentary, in this exact shape: "+
+      '{"matches":[{"events":[{"team":"A"|"B"|null,"text":"..."}]}]} '+
+      "with one object per match, in the same order as listed, array length exactly "+pairs.length+".\n\n"+lines;
+
+    var parsed = await callClaude(prompt);
+    if (!parsed.matches || parsed.matches.length !== pairs.length) throw new Error("bad shape");
+    var results = parsed.matches.map(function(m, idx){
+      var pair = pairs[idx];
+      var squadA = teams[pair.aIdx].squad||[], squadB = teams[pair.bIdx].squad||[];
+      var gkNamesA = squadA.filter(function(p){return p.pos==="GK";}).map(function(p){return p.name;});
+      var gkNamesB = squadB.filter(function(p){return p.pos==="GK";}).map(function(p){return p.name;});
+      var events = (Array.isArray(m.events) && m.events.length) ? m.events.slice(0,8).map(function(e){
+        var team = (e && (e.team === "A" || e.team === "B")) ? e.team : null;
+        var text = ((e && e.text) ? String(e.text) : "Chance goes begging.").slice(0,140);
+        // safety net: if the model still credits a goal to a named goalkeeper, drop the goal tag
+        if (team){
+          var gkNames = team === "A" ? gkNamesA : gkNamesB;
+          if (gkNames.some(function(n){ return n && text.indexOf(n) !== -1; })) team = null;
+        }
+        return { team: team, text: text };
+      }) : [{ team: null, text: "A tightly fought, goalless spell." }];
+      var scoreA = events.filter(function(e){ return e.team === "A"; }).length;
+      var scoreB = events.filter(function(e){ return e.team === "B"; }).length;
+      return { scoreA: scoreA, scoreB: scoreB, winner: scoreA >= scoreB ? "A" : "B", events: events };
+    });
+    return { results: results, fallback: false };
+  } catch(e){
+    console.error("round sim fallback", e);
+    return { results: pairs.map(function(p){ return fallbackMatchResult(teams[p.aIdx], teams[p.bIdx]); }), fallback: true };
+  }
+}
+
+async function getAnalyticsWithClaude(teams){
+  try{
+    var lines = teams.map(function(t, i){ return "Team "+(i+1)+" ("+t.name+"): "+teamDesc(t); }).join("\n");
+    var prompt = "Give short scouting-report analytics for each fantasy 5-a-side football squad below, using the computed squad strength score and player OVRs given \u2014 the 1-100 rating you assign should closely track that computed strength score, not be invented freely. "+
+      "For each team give: an overall squad rating from 1-100, the standout MVP player's name (their highest-OVR player), one strength (max 10 words), one weakness (max 10 words \u2014 call out a missing goalkeeper or thin depth if relevant), and a one-line value-for-money verdict (max 12 words) based on what was spent from a $50,000 budget. "+
+      "Respond with ONLY strict JSON, no markdown fences, no extra text, exactly this shape with one entry per team in the SAME order as listed, array length exactly "+teams.length+": "+
+      '{"analytics":[{"rating":number,"mvp":"...","strength":"...","weakness":"...","valueForMoney":"..."}]}\n\n'+lines;
+
+    var parsed = await callClaude(prompt);
+    if (!parsed.analytics || parsed.analytics.length !== teams.length) throw new Error("bad shape");
+    var analytics = parsed.analytics.map(function(a, i){
+      var st = teamStrength(teams[i]);
+      return {
+        team: teams[i].name,
+        rating: clampInt(a.rating, Math.max(1, st.score-8), Math.min(100, st.score+8)),
+        mvp: a.mvp || ((teams[i].squad[0] && teams[i].squad[0].name) || "\u2014"),
+        strength: a.strength || "Balanced squad.",
+        weakness: a.weakness || "Squad depth untested.",
+        valueForMoney: a.valueForMoney || "Reasonable business overall."
+      };
+    });
+    return { analytics: analytics, fallback: false };
+  } catch(e){
+    console.error("analytics fallback", e);
+    return { analytics: teams.map(function(t){ return fallbackAnalytics(t); }), fallback: true };
+  }
+}
+
+function teamPower(team){
+  return teamStrength(team).score || 1;
+}
+function poissonSample(lambda){
+  var L = Math.exp(-Math.max(0.05, lambda)), k = 0, p = 1;
+  do { k++; p *= Math.random(); } while (p > L && k < 12);
+  return k - 1;
+}
+function pickScorers(team, count){
+  var pool = (team.squad||[]).filter(function(p){ return p.pos !== "GK"; });
+  if (!pool.length) pool = (team.squad && team.squad.length) ? team.squad : [{ name: team.name+"'s squad", pos:"FWD" }];
+  var weighted = pool.map(function(p){
+    var w = (p.ovr||70) + (p.pos==="FWD"?18:(p.pos==="MID"?9:0));
+    return { p:p, w: Math.max(1,w) };
+  });
+  var total = weighted.reduce(function(s,x){ return s+x.w; }, 0);
+  var out = [];
+  for (var i=0;i<count;i++){
+    var r = Math.random()*total, acc=0, chosen=weighted[0];
+    for (var j=0;j<weighted.length;j++){ acc += weighted[j].w; if (r<=acc){ chosen=weighted[j]; break; } }
+    out.push(chosen.p);
+  }
+  return out;
+}
+function fallbackMatchResult(a, b){
+  var stA = teamStrength(a), stB = teamStrength(b);
+  var diff = stA.score - stB.score; // typically -25..25
+  var baseGoals = 2.1;
+  var lambdaA = Math.max(0.15, baseGoals * (1 + diff/45));
+  var lambdaB = Math.max(0.15, baseGoals * (1 - diff/45));
+  var sa = poissonSample(lambdaA);
+  var sb = poissonSample(lambdaB);
+  if (sa === sb){
+    // strength gap should still decide close matches most of the time
+    var probA = 1/(1+Math.pow(10, -diff/15));
+    if (Math.random() < probA) sa++; else sb++;
+  }
+  var events = [];
+  pickScorers(a, sa).forEach(function(p){ events.push({ team:"A", text: p.name+" finishes well for "+a.name+"!" }); });
+  pickScorers(b, sb).forEach(function(p){ events.push({ team:"B", text: p.name+" strikes for "+b.name+"!" }); });
+  events = shuffle(events);
+  if (events.length === 0) events.push({ team:null, text:"A goalless stalemate between "+a.name+" and "+b.name+"." });
+  return { scoreA: sa, scoreB: sb, winner: sa >= sb ? "A" : "B", events: events };
+}
+function fallbackAnalytics(t){
+  var st = teamStrength(t);
+  var rating = clampInt(st.score + Math.floor(Math.random()*6) - 3, 1, 100);
+  var sorted = (t.squad||[]).slice().sort(function(x,y){ return (y.ovr||0)-(x.ovr||0); });
+  var mvpPlayer = sorted[0];
+  var spent = BUDGET_START - t.budget;
+  return {
+    team: t.name,
+    rating: rating,
+    mvp: mvpPlayer ? mvpPlayer.name : "\u2014",
+    strength: st.outfieldAvg >= 82 ? "Real star quality in the outfield." : "Well-balanced squad spending.",
+    weakness: !st.hasGK ? "No specialist goalkeeper." : (st.depth < SQUAD_SIZE ? "Incomplete squad depth." : "Lacks a standout difference-maker."),
+    valueForMoney: spent < BUDGET_START*0.6 ? "Shrewd, cost-effective business." : "Spent big \u2014 needs the end product."
+  };
+}
+
+// ---------------- polling / host loop ----------------
+function startPolling(){
+  stopPolling();
+  pollTimer = setInterval(pollTick, POLL_MS);
+  hostTimer = setInterval(hostTick, HOST_TICK_MS);
+}
+function stopPolling(){
+  if (pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+  if (hostTimer){ clearInterval(hostTimer); hostTimer = null; }
+}
+function pollTick(){
+  if (!roomCode) return;
+  loadRoom(roomCode).then(function(fresh){
+    if (!fresh) return;
+    var wasStatus = lastRoom ? lastRoom.status : null;
+    lastRoom = fresh;
+    if (fresh.status === "sold" && wasStatus !== "sold"){
+      soldBannerUntil = Date.now() + SOLD_BANNER_MS;
+    }
+    render();
+  });
+}
+function aiMaybeBid(room){
+  if (!room.current) return false;
+  var pdef = PLAYERS_BY_ID[room.current.playerId];
+  var changed = false;
+  Object.keys(room.players).forEach(function(id){
+    var bot = room.players[id];
+    if (!bot.isAI) return;
+    if (!canBidOn(bot, pdef)) return;
+    if (room.current.bid.bidderId === id) return;
+    if ((room.current.passed||[]).indexOf(id) !== -1) return;
+    var maxBid = maxAllowedBid(bot);
+    var minNext = Math.max(1000, room.current.bid.amount + 1000);
+    if (minNext > maxBid) return;
+    // desirability nudges the bot toward better-rated players, but keep it simple & a bit random
+    var desire = 0.35 + (pdef.ovr - 75) * 0.01;
+    if (Math.random() > Math.max(0.15, Math.min(0.85, desire))) return;
+    var step = 1000 * (1 + Math.floor(Math.random()*3));
+    var amount = Math.min(maxBid, room.current.bid.amount>0 ? room.current.bid.amount+step : Math.max(1000, step));
+    room.current.bid = { amount: amount, bidderId: id, bidderName: bot.name };
+    room.current.passed = [];
+    room.current.endTime = room.current.endTime + BID_TIME_EXTENSION_MS;
+    changed = true;
+  });
+  return changed;
+}
+
+function hostTick(){
+  if (!roomCode || !lastRoom || lastRoom.hostId !== myId || hostBusy) return;
+  hostBusy = true;
+  loadRoom(roomCode).then(function(room){
+    if (!room){ hostBusy = false; return; }
+    if (room.status === "auction" && room.current && Date.now() >= room.current.endTime){
+      resolveCurrentAuction(room);
+    } else if (room.status === "auction" && room.current){
+      var botActed = aiMaybeBid(room);
+      if (botActed){
+        maybeForceEarlyResolve(room);
+        saveRoom(room);
+      }
+    } else if (room.status === "sold"){
+      var soldAt = room.updatedAt || 0;
+      if (Date.now() - soldAt >= SOLD_BANNER_MS){
+        advanceToNextPlayer(room);
+      }
+    } else if (room.status === "finished" && room.simulation && room.simulation.status === "running"){
+      var elapsedSim = Date.now() - room.simulation.startTime;
+      if (elapsedSim >= room.simulation.duration){
+        room.simulation.status = "done";
+        saveRoom(room);
+      }
+    }
+    hostBusy = false;
+  }).catch(function(){ hostBusy = false; });
+}
+
+// countdown-only re-render tick (smooth timer / ticker without full poll)
+setInterval(function(){
+  if (!lastRoom) return;
+  if (lastRoom.status === "auction" && lastRoom.current){ render(); }
+  else if (lastRoom.status === "finished" && lastRoom.simulation && lastRoom.simulation.status === "running"){ render(); }
+}, 500);
+
+function leaveRoom(){
+  stopPolling();
+  lastRoom = null;
+  roomCode = "";
+  joinError = "";
+  lastStickerPlayerId = null;
+  render();
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+
+var musicBtn = document.getElementById("music-toggle");
+if (musicBtn){ musicBtn.onclick = toggleMusic; }
+
+render();
+})();
+</script>
+</body>
+</html>
